@@ -1,0 +1,51 @@
+
+import { Input } from "@/components/ui/input";
+import { NFTCard } from "@/components/ui/nft-card";
+import { NFTFactoryContract } from "@/lib/config";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import { useReadContract } from "wagmi";
+
+export default function NFTsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: nfts, isLoading } = useReadContract({
+    abi: NFTFactoryContract.abi,
+    address: NFTFactoryContract.address,
+    functionName: 'deployments',
+  });
+
+  return (
+    <div className="bg-white min-h-screen">
+      <div className="container mx-auto px-6 py-20 max-w-7xl">
+        <div className="mb-20">
+          <h1 className="text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
+            NFT<br />Marketplace
+          </h1>
+          <p className="text-xl md:text-2xl font-light max-w-2xl">
+            Discover, mint, and trade unique NFT collections.
+          </p>
+        </div>
+
+        <div className="mb-16 space-y-6">
+          <div className="relative">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black w-6 h-6" />
+            <Input
+              placeholder="SEARCH COLLECTIONS..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-16 w-full h-16 text-lg border-2 border-black focus:ring-0 focus:border-black font-medium uppercase placeholder:text-gray-400"
+            />
+          </div>
+        </div>
+
+        {isLoading && <p>Loading collections...</p>}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {nfts && nfts.map((nft) => (
+            <NFTCard nftAddress={nft.nft} key={nft.nft} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
