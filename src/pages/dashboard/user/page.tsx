@@ -50,9 +50,9 @@ export default function UserDashboardPage() {
 
 
   return (
-    <div className="container mx-auto px-4 py-12 text-black">
-      <section className="mb-12">
-        <h1 className="text-4xl font-bold mb-4">Your Dashboard</h1>
+    <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-black">
+      <section className="mb-8 sm:mb-12 text-right lg:text-left">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-4">Your Dashboard</h1>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">

@@ -24,14 +24,14 @@ export default function MarketDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 text-black">
-      <section className="mb-8 flex items-center gap-4">
-        <Avatar className="h-16 w-16">
+      <section className="mb-8 flex flex-col lg:flex-row items-end lg:items-center gap-4 text-right lg:text-left">
+        <Avatar className="h-16 w-16 ml-auto lg:ml-0">
           <AvatarImage src={market.logo} alt={`${market.name} logo`} />
           <AvatarFallback>{market.symbol.slice(0, 2)}</AvatarFallback>
         </Avatar>
-        <div>
-          <h1 className="text-4xl font-bold">{market.name} ({market.symbol})</h1>
-          <p className="text-lg text-gray-500">Created by @{market.creator}</p>
+        <div className="w-full lg:w-auto">
+          <h1 className="text-3xl sm:text-4xl font-bold">{market.name} ({market.symbol})</h1>
+          <p className="text-base sm:text-lg text-gray-500">Created by @{market.creator}</p>
         </div>
       </section>
 

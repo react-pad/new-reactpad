@@ -106,7 +106,7 @@ export function ProjectParticipation({ project }: { project: Project; }) {
               <span className="font-medium">Your Allocation</span>
               <span className="font-bold">${allocationAmount}</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
               <Input
                 type="number"
                 placeholder={`Amount (max ${allocationAmount})`}
@@ -115,7 +115,7 @@ export function ProjectParticipation({ project }: { project: Project; }) {
                 onChange={(e) => setPurchaseAmount(e.target.value)}
                 max={allocationAmount}
               />
-              <Button onClick={handlePurchase}>Buy</Button>
+              <Button onClick={handlePurchase} className="w-full sm:w-auto">Buy</Button>
             </div>
             <p className="text-xs text-gray-500">
               Gas estimate: 0.002 ETH. You will receive approximately 995 TKN.

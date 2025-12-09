@@ -32,10 +32,10 @@ const creationOptions = [
 
 export default function CreateHubPage() {
   return (
-    <div className="container mx-auto px-4 py-12 text-black">
-      <section className="mb-12">
-        <h1 className="text-4xl font-bold mb-4">Create</h1>
-        <p className="text-lg text-gray-600">
+    <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-black">
+      <section className="mb-8 sm:mb-12 text-right lg:text-left">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-4">Create</h1>
+        <p className="text-base sm:text-lg text-gray-600 max-w-2xl ml-auto lg:ml-0">
           Create new assets and utilities for the Reactive ecosystem.
         </p>
       </section>

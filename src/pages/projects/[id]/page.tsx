@@ -125,11 +125,11 @@ export default function ProjectDetailPage() {
   const isFinished = claimEnabled?.result || refundsEnabled?.result;
 
   return (
-    <div className="container mx-auto px-4 py-12 text-black">
+    <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-black">
       {/* Header */}
-      <section className="mb-12">
-        <h1 className="text-5xl font-bold mb-2">{name?.result as string}</h1>
-        <p className="text-xl text-gray-600">Presale for {name?.result as string}</p>
+      <section className="mb-8 sm:mb-12 text-right lg:text-left">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">{name?.result as string}</h1>
+        <p className="text-lg sm:text-xl text-gray-600">Presale for {name?.result as string}</p>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -139,12 +139,12 @@ export default function ProjectDetailPage() {
             <Card>
               <CardHeader><CardTitle>Contribute</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                   <Input type="number" placeholder="Amount" className="flex-grow" value={contributionAmount} onChange={e => setContributionAmount(e.target.value)} />
                   {needsApproval ? (
-                    <Button onClick={handleApprove}>Approve</Button>
+                    <Button onClick={handleApprove} className="w-full sm:w-auto">Approve</Button>
                   ) : (
-                    <Button onClick={handleContribute}>Contribute</Button>
+                    <Button onClick={handleContribute} className="w-full sm:w-auto">Contribute</Button>
                   )}
                 </div>
               </CardContent>
@@ -152,9 +152,9 @@ export default function ProjectDetailPage() {
           ) : (
             <Card>
               <CardHeader><CardTitle>Presale Finished</CardTitle></CardHeader>
-              <CardContent>
-                {claimEnabled?.result && <Button onClick={handleClaim}>Claim Tokens</Button>}
-                {refundsEnabled?.result && <Button>Claim Refund</Button>}
+              <CardContent className="flex flex-col gap-4">
+                {claimEnabled?.result && <Button onClick={handleClaim} className="w-full">Claim Tokens</Button>}
+                {refundsEnabled?.result && <Button className="w-full">Claim Refund</Button>}
               </CardContent>
             </Card>
           )}
@@ -167,26 +167,26 @@ export default function ProjectDetailPage() {
               <CardTitle>Tokenomics</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span>Token Name</span>
-                <span className="font-bold">{name?.result as string}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-sm sm:text-base">Token Name</span>
+                <span className="font-bold text-sm sm:text-base text-right break-all max-w-[60%]">{name?.result as string}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Ticker</span>
-                <span className="font-bold">{symbol?.result as string}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-sm sm:text-base">Ticker</span>
+                <span className="font-bold text-sm sm:text-base text-right">{symbol?.result as string}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Rate</span>
-                <span className="font-bold">{formatEther(rate?.result as bigint ?? BigInt(0))} {symbol?.result as string} per {paymentSymbol?.result ?? "ETH"}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-sm sm:text-base">Rate</span>
+                <span className="font-bold text-sm sm:text-base text-right break-all max-w-[60%]">{formatEther(rate?.result as bigint ?? BigInt(0))} {symbol?.result as string} per {paymentSymbol?.result ?? "ETH"}</span>
               </div>
               <Separator />
-              <div className="flex justify-between">
-                <span>Soft Cap</span>
-                <span className="font-bold">{formatEther(softCap?.result as bigint ?? BigInt(0))} {paymentSymbol?.result ?? "ETH"}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-sm sm:text-base">Soft Cap</span>
+                <span className="font-bold text-sm sm:text-base text-right">{formatEther(softCap?.result as bigint ?? BigInt(0))} {paymentSymbol?.result ?? "ETH"}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Hard Cap</span>
-                <span className="font-bold">{formatEther(hardCap?.result as bigint ?? BigInt(0))} {paymentSymbol?.result ?? "ETH"}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-sm sm:text-base">Hard Cap</span>
+                <span className="font-bold text-sm sm:text-base text-right">{formatEther(hardCap?.result as bigint ?? BigInt(0))} {paymentSymbol?.result ?? "ETH"}</span>
               </div>
             </CardContent>
           </Card>

@@ -1,21 +1,21 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import RootLayout from "./RootLayout";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppLayout from "./AppLayout";
-import Home from "./pages/page";
-import CreateHubPage from "./pages/dashboard/create/page";
 import CreateNftPage from "./pages/dashboard/create/nft/page";
+import CreateHubPage from "./pages/dashboard/create/page";
 import CreatePresalePage from "./pages/dashboard/create/presale/page";
 import CreateProjectPage from "./pages/dashboard/create/project/page";
 import CreateTokenPage from "./pages/dashboard/create/token/page";
 import AirdropPage from "./pages/dashboard/tools/airdrop/page";
 import TokenLockerPage from "./pages/dashboard/tools/token-locker/page";
 import UserDashboardPage from "./pages/dashboard/user/page";
-import MarketsPage from "./pages/markets/page";
 import MarketDetailPage from "./pages/markets/[id]/page";
-import NFTsPage from "./pages/nfts/page";
+import MarketsPage from "./pages/markets/page";
 import NFTDetailPage from "./pages/nfts/[id]/page";
-import ProjectsPage from "./pages/projects/page";
+import NFTsPage from "./pages/nfts/page";
+import Home from "./pages/page";
 import ProjectDetailPage from "./pages/projects/[id]/page";
+import ProjectsPage from "./pages/projects/page";
+import RootLayout from "./RootLayout";
 
 function App() {
   return (

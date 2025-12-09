@@ -4,10 +4,13 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
   LayoutDashboard,
+  Menu,
   PlusSquare,
-  Rocket
+  Rocket,
+  X
 } from "lucide-react";
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import { sepolia } from "viem/chains";
@@ -25,6 +28,7 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
   const { address, chain } = useAccount();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isConnected = !!address;
   const isWrongNetwork = isConnected && chain?.id !== sepolia.id;
@@ -39,7 +43,24 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
 
   return (
     <div className="flex h-screen bg-[#FFF9F0] text-black">
-      <div className="flex flex-col w-72 h-full bg-white border-r-4 border-black overflow-y-auto">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 bg-[#7DF9FF] p-3 border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
+      >
+        {isMobileMenuOpen ? <X size={24} strokeWidth={3} /> : <Menu size={24} strokeWidth={3} />}
+      </button>
+
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`flex flex-col w-72 h-full bg-white border-r-4 border-black overflow-y-auto fixed lg:static z-40 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         {/* Logo */}
         <div className="p-1 border-b-4 border-black bg-[#7DF9FF] flex items-center justify-center">
           <Link to="/" className="flex items-center justify-center">
@@ -106,6 +127,7 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
                   <li key={item.name}>
                     <Link
                       to={item.to}
+                      onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center px-4 py-3 transition-all font-black uppercase text-xs tracking-wider border-2 border-black ${isActive
                         ? "bg-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                         : "text-black hover:bg-black hover:text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
@@ -123,6 +145,7 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
             <div className="mt-8 mb-3">
               <Link
                 to="/dashboard/create"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center justify-center w-full px-4 py-4 transition-all font-black uppercase text-xs tracking-wider border-4 border-black ${pathname === "/dashboard/create"
                   ? "bg-[#FF4911] text-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
                   : "bg-[#FF00F5] text-black hover:bg-[#FF4911] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
@@ -149,7 +172,7 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
         </nav>
       </div>
 
-      <main className="flex-1 overflow-y-auto bg-[#FFF9F0]">{children}</main>
+      <main className="flex-1 overflow-y-auto bg-[#FFF9F0] lg:ml-0">{children}</main>
     </div>
   );
 }

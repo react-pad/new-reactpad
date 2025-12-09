@@ -17,12 +17,12 @@ export default function NFTsPage() {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="container mx-auto px-6 py-20 max-w-7xl">
-        <div className="mb-20">
-          <h1 className="text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
+      <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 max-w-7xl">
+        <div className="mb-12 sm:mb-20 text-right lg:text-left">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
             NFT<br />Marketplace
           </h1>
-          <p className="text-xl md:text-2xl font-light max-w-2xl">
+          <p className="text-lg sm:text-xl md:text-2xl font-light max-w-2xl ml-auto lg:ml-0">
             Discover, mint, and trade unique NFT collections.
           </p>
         </div>

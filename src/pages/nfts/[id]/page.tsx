@@ -60,9 +60,9 @@ export default function NFTDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 text-black">
-      <section className="mb-12">
-        <h1 className="text-5xl font-bold mb-2">{name?.result as string}</h1>
-        <p className="text-xl text-gray-600">Mint your {symbol?.result as string} now!</p>
+      <section className="mb-12 text-right lg:text-left">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">{name?.result as string}</h1>
+        <p className="text-lg sm:text-xl text-gray-600">Mint your {symbol?.result as string} now!</p>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
@@ -70,9 +70,9 @@ export default function NFTDetailPage() {
           <Card>
             <CardHeader><CardTitle>Mint</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <Input type="number" placeholder="Amount" className="flex-grow" value={mintAmount} onChange={e => setMintAmount(e.target.value)} />
-                <Button onClick={handleMint}>Mint</Button>
+                <Button onClick={handleMint} className="w-full sm:w-auto">Mint</Button>
               </div>
             </CardContent>
           </Card>

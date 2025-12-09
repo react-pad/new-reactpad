@@ -3,7 +3,7 @@ import { BookOpen, GitMerge, Twitter } from "lucide-react";
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#FFF9F0] text-black">
-      <div className="container mx-auto px-6 py-7 max-w-7xl">
+      <div className="container mx-auto px-4 sm:px-6 py-7 max-w-7xl">
         {/* Hero Section */}
         <section className="mb-32 text-center">
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -18,16 +18,16 @@ export default function Home() {
               ReactPad
             </div>
           </div>
-          <h1 className="text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-none mb-8 tracking-tight">
+          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-none mb-8 tracking-tight">
             LAUNCH IDEAS.<br />
             MOON PROJECTS.
           </h1>
-          <p className="text-2xl md:text-3xl mb-12 max-w-3xl mx-auto font-bold">
+          <p className="text-xl sm:text-2xl md:text-3xl mb-12 max-w-3xl mx-auto font-bold px-4">
             Discover, back, and launch the most promising projects on the Reactive Network.
           </p>
           <a
             href="/projects"
-            className="inline-block bg-[#7DF9FF] text-black font-black py-5 px-12 text-lg border-4 border-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            className="inline-block bg-[#7DF9FF] text-black font-black py-4 px-8 sm:py-5 sm:px-12 text-base sm:text-lg border-4 border-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
           >
             EXPLORE PROJECTS →
           </a>
@@ -51,7 +51,7 @@ export default function Home() {
 
         {/* How It Works Section */}
         <section className="mb-32">
-          <h2 className="text-5xl md:text-6xl font-black uppercase mb-16 tracking-tight text-center">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black uppercase mb-16 tracking-tight text-center">
             HOW IT WORKS
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -75,7 +75,7 @@ export default function Home() {
 
         {/* Featured Projects Section */}
         <section className="mb-32">
-          <h2 className="text-5xl md:text-6xl font-black uppercase mb-16 tracking-tight">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black uppercase mb-16 tracking-tight">
             FEATURED LAUNCHES
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -98,16 +98,16 @@ export default function Home() {
         </section>
 
         {/* Call to Action Section */}
-        <section className="bg-black text-white border-4 border-black p-16 text-center mb-16 shadow-[8px_8px_0px_0px_#7DF9FF]">
-          <h2 className="text-5xl md:text-6xl font-black uppercase mb-6 tracking-tight">
+        <section className="bg-black text-white border-4 border-black p-8 sm:p-12 md:p-16 text-center mb-16 shadow-[8px_8px_0px_0px_#7DF9FF]">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-black uppercase mb-6 tracking-tight">
             Ready to Launch?
           </h2>
-          <p className="text-xl md:text-2xl mb-10 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl md:text-2xl mb-10 max-w-2xl mx-auto px-4">
             Got the next big idea? Launch your project on ReactPad and get the funding you need to make it a reality.
           </p>
           <a
             href="/dashboard/create"
-            className="inline-block bg-[#FF00F5] text-black font-black py-5 px-12 text-lg border-4 border-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            className="inline-block bg-[#FF00F5] text-black font-black py-4 px-8 sm:py-5 sm:px-12 text-base sm:text-lg border-4 border-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(255,255,255,0.5)] hover:shadow-[8px_8px_0px_0px_rgba(255,255,255,0.5)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
           >
             CREATE A PROJECT
           </a>
@@ -116,8 +116,8 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-black text-white border-t-4 border-black">
-        <div className="container mx-auto px-6 py-8 max-w-7xl flex justify-between items-center">
-          <p className="font-bold uppercase tracking-wider">&copy; {new Date().getFullYear()} ReactPad</p>
+        <div className="container mx-auto px-6 py-8 max-w-7xl flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="font-bold uppercase tracking-wider text-center md:text-left">&copy; {new Date().getFullYear()} ReactPad</p>
           <div className="flex gap-6">
             <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#7DF9FF] transition-colors">
               <Twitter size={24} />

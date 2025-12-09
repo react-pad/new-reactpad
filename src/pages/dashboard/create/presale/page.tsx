@@ -70,10 +70,10 @@ export default function CreatePresalePage() {
     }, [isConfirmed, error])
 
     return (
-        <div className="container mx-auto px-4 py-12 text-black">
+        <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-black">
             <Card className="max-w-2xl mx-auto">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Create a new Presale</CardTitle>
+                    <CardTitle className="text-xl sm:text-2xl font-bold">Create a new Presale</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
@@ -84,7 +84,7 @@ export default function CreatePresalePage() {
                         <Label htmlFor="payment-token">Payment Token Address</Label>
                         <Input id="payment-token" placeholder="0x..." value={paymentToken} onChange={e => setPaymentToken(e.target.value)} />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="start-time">Start Time</Label>
                             <Input id="start-time" type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} />
@@ -98,7 +98,7 @@ export default function CreatePresalePage() {
                         <Label htmlFor="rate">Rate</Label>
                         <Input id="rate" type="number" placeholder="e.g. 1000 (tokens per ETH/payment token)" value={rate} onChange={e => setRate(e.target.value)} />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="soft-cap">Soft Cap</Label>
                             <Input id="soft-cap" type="number" placeholder="10" value={softCap} onChange={e => setSoftCap(e.target.value)} />
@@ -108,7 +108,7 @@ export default function CreatePresalePage() {
                             <Input id="hard-cap" type="number" placeholder="100" value={hardCap} onChange={e => setHardCap(e.target.value)} />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="min-contribution">Min Contribution</Label>
                             <Input id="min-contribution" type="number" placeholder="0.1" value={minContribution} onChange={e => setMinContribution(e.target.value)} />
