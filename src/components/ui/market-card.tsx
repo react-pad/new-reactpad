@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,14 +33,14 @@ export function MarketCard({ market }: MarketCardProps) {
   return (
     <Link to={`/markets/${market.id}`} className="block">
       <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
-        <CardHeader className="flex flex-row items-center gap-3 sm:gap-4">
-          <Avatar className="flex-shrink-0">
+        <CardHeader className="flex flex-row items-center gap-4">
+          <Avatar>
             <AvatarImage src={market.logo} alt={`${market.name} logo`} />
             <AvatarFallback>{market.symbol.slice(0, 2)}</AvatarFallback>
           </Avatar>
-          <div className="min-w-0 flex-1">
-            <CardTitle className="text-base sm:text-lg font-bold truncate">{market.name}</CardTitle>
-            <p className="text-xs sm:text-sm text-gray-500 truncate">by @{market.creator}</p>
+          <div>
+            <CardTitle className="text-lg font-bold">{market.name}</CardTitle>
+            <p className="text-sm text-gray-500">by @{market.creator}</p>
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm">

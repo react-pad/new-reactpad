@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
-import { TokenFactoryContract } from '@/lib/config';
+import { TokenFactory } from '../config';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
+import type { Address } from 'viem';
 
 export function useUserTokens(forceRefetch = false) {
   const { address } = useAccount();
@@ -18,8 +19,8 @@ export function useUserTokens(forceRefetch = false) {
   const shouldFetch = address && (isStale || forceRefetch || !cachedTokens);
 
   const { data: tokens, isLoading, refetch } = useReadContract({
-    abi: TokenFactoryContract.abi,
-    address: TokenFactoryContract.address,
+    abi: TokenFactory.abi,
+    address: TokenFactory.address as Address,
     functionName: 'tokensCreatedBy',
     args: [address as `0x${string}`],
     query: {

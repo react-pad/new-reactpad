@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useReadContract } from 'wagmi';
 import { PresaleFactoryContract } from '@/lib/config';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
+import type { Address } from 'viem';
 
 export function usePresales(forceRefetch = false) {
   const {
@@ -17,7 +18,7 @@ export function usePresales(forceRefetch = false) {
 
   const { data: presales, isLoading, refetch } = useReadContract({
     abi: PresaleFactoryContract.abi,
-    address: PresaleFactoryContract.address,
+    address: PresaleFactoryContract.address as Address,
     functionName: 'allPresales',
     query: {
       enabled: shouldFetch,

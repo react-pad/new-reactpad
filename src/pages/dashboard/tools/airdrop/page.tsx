@@ -1,34 +1,57 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AirdropMultisenderContract } from "@/lib/config";
-import { useSearchParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { erc20Abi, maxUint256, parseEther } from "viem";
-import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { erc20Abi, formatEther, maxUint256, parseEther } from "viem";
+import {
+    useAccount,
+    useReadContract,
+    useWaitForTransactionReceipt,
+    useWriteContract,
+} from "wagmi";
 
 export default function AirdropPage() {
     const [searchParams] = useSearchParams();
     const { address } = useAccount();
 
-    const { data: sendHash, writeContract: sendTokens, isPending: isSending, error: sendError } = useWriteContract();
-    const { data: approveHash, writeContract: approve, isPending: isApproving, error: approveError } = useWriteContract();
+    const {
+        data: sendHash,
+        writeContract: sendTokens,
+        isPending: isSending,
+        error: sendError,
+    } = useWriteContract();
+    const {
+        data: approveHash,
+        writeContract: approve,
+        isPending: isApproving,
+        error: approveError,
+    } = useWriteContract();
 
-    const [tokenAddress, setTokenAddress] = useState(searchParams.get("token") ?? "");
+    const [tokenAddress, setTokenAddress] = useState(
+        searchParams.get("token") ?? ""
+    );
     const [recipientsData, setRecipientsData] = useState("");
+    const [sendType, setSendType] = useState<"erc20" | "eth">("erc20");
 
     const parsedRecipients = useMemo(() => {
         if (!recipientsData) {
             return { recipients: [], amounts: [] };
         }
-        return recipientsData
-            .split('\n')
-            .reduce((acc, line) => {
-                const parts = line.split(',');
+        return recipientsData.split("\n").reduce(
+            (acc, line) => {
+                const parts = line.split(",");
                 if (parts.length === 2) {
                     const recipient = parts[0].trim();
                     const amountStr = parts[1].trim();
@@ -38,79 +61,98 @@ export default function AirdropPage() {
                             acc.recipients.push(recipient as `0x${string}`);
                             acc.amounts.push(amount);
                         } catch (error) {
-                            console.log({ error })
+                            console.log({ error });
                             console.warn(`Could not parse amount for line: "${line}"`);
                         }
                     }
                 }
                 return acc;
-            }, { recipients: [] as `0x${string}`[], amounts: [] as bigint[] });
+            },
+            { recipients: [] as `0x${string}`[], amounts: [] as bigint[] }
+        );
     }, [recipientsData]);
 
     const totalAmount = useMemo(() => {
-        return parsedRecipients.amounts.reduce((acc, curr) => acc + curr, BigInt(0));
+        return parsedRecipients.amounts.reduce(
+            (acc, curr) => acc + curr,
+            BigInt(0)
+        );
     }, [parsedRecipients]);
 
     const { data: allowance, refetch: refetchAllowance } = useReadContract({
         abi: erc20Abi,
         address: tokenAddress as `0x${string}`,
-        functionName: 'allowance',
-        args: [address!, AirdropMultisenderContract.address],
+        functionName: "allowance",
+        args: [address!, AirdropMultisenderContract.address as `0x${string}`],
         query: {
-            enabled: !!address && !!tokenAddress,
-        }
+            enabled: !!address && !!tokenAddress && sendType === "erc20",
+        },
     });
 
     const needsApproval = useMemo(() => {
-        if (!allowance) return false;
+        if (sendType === "eth" || !allowance) return false;
         return allowance < totalAmount;
-    }, [allowance, totalAmount]);
+    }, [allowance, totalAmount, sendType]);
 
     const handleApprove = () => {
         approve({
             address: tokenAddress as `0x${string}`,
             abi: erc20Abi,
             functionName: "approve",
-            args: [AirdropMultisenderContract.address, maxUint256]
-        })
-    }
+            args: [AirdropMultisenderContract.address as `0x${string}`, maxUint256],
+        });
+    };
 
     const handleSend = () => {
-        sendTokens({
-            address: AirdropMultisenderContract.address,
-            abi: AirdropMultisenderContract.abi,
-            functionName: "sendERC20",
-            args: [
-                tokenAddress as `0x${string}`,
-                parsedRecipients.recipients,
-                parsedRecipients.amounts
-            ]
-        })
-    }
+        if (sendType === "eth") {
+            sendTokens({
+                address: AirdropMultisenderContract.address as `0x${string}`,
+                abi: AirdropMultisenderContract.abi,
+                functionName: "sendETH",
+                args: [parsedRecipients.recipients, parsedRecipients.amounts],
+                value: totalAmount,
+            });
+        } else {
+            sendTokens({
+                address: AirdropMultisenderContract.address as `0x${string}`,
+                abi: AirdropMultisenderContract.abi,
+                functionName: "sendERC20",
+                args: [
+                    tokenAddress as `0x${string}`,
+                    parsedRecipients.recipients,
+                    parsedRecipients.amounts,
+                ],
+            });
+        }
+    };
 
-    const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({ hash: approveHash });
-    const { isLoading: isSendConfirming, isSuccess: isSendConfirmed } = useWaitForTransactionReceipt({ hash: sendHash });
+    const {
+        isLoading: isApproveConfirming,
+        isSuccess: isApproveConfirmed,
+    } = useWaitForTransactionReceipt({ hash: approveHash });
+    const { isLoading: isSendConfirming, isSuccess: isSendConfirmed } =
+        useWaitForTransactionReceipt({ hash: sendHash });
 
     useEffect(() => {
         if (isApproveConfirmed) {
             toast.success("Approval successful! You can now send your tokens.");
             refetchAllowance();
         }
-    }, [isApproveConfirmed, refetchAllowance])
+    }, [isApproveConfirmed, refetchAllowance]);
 
     useEffect(() => {
         if (isSendConfirmed) {
             toast.success("Tokens sent successfully!");
             setRecipientsData("");
         }
-    }, [isSendConfirmed])
+    }, [isSendConfirmed]);
 
     useEffect(() => {
         const err = sendError || approveError;
         if (err) {
             toast.error(err.message);
         }
-    }, [sendError, approveError])
+    }, [sendError, approveError]);
 
     return (
         <div className="container mx-auto px-4 py-12 text-black">
@@ -120,16 +162,40 @@ export default function AirdropPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
-                        <Label htmlFor="token-address">Token Address</Label>
-                        <Input id="token-address" placeholder="0x..." value={tokenAddress} onChange={e => setTokenAddress(e.target.value)} />
+                        <Label>Send Type</Label>
+                        <Select
+                            value={sendType}
+                            onValueChange={(value) =>
+                                setSendType(value as "erc20" | "eth")
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select send type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="erc20">ERC20 Token</SelectItem>
+                                <SelectItem value="eth">ETH</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
+                    {sendType === "erc20" && (
+                        <div className="space-y-2">
+                            <Label htmlFor="token-address">Token Address</Label>
+                            <Input
+                                id="token-address"
+                                placeholder="0x..."
+                                value={tokenAddress}
+                                onChange={(e) => setTokenAddress(e.target.value)}
+                            />
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Label htmlFor="recipients">Recipients and Amounts</Label>
                         <Textarea
                             id="recipients"
                             placeholder="0x...,100\n0x...,200"
                             value={recipientsData}
-                            onChange={e => setRecipientsData(e.target.value)}
+                            onChange={(e) => setRecipientsData(e.target.value)}
                             className="min-h-[200px]"
                         />
                         <p className="text-xs text-gray-500">
@@ -138,16 +204,29 @@ export default function AirdropPage() {
                     </div>
 
                     <div className="text-sm">
-                        Total to send: <span className="font-bold">{totalAmount.toString()}</span>
+                        Total to send:{" "}
+                        <span className="font-bold">
+                            {formatEther(totalAmount)} {sendType === "eth" ? "ETH" : "tokens"}
+                        </span>
                     </div>
 
                     {needsApproval ? (
-                        <Button onClick={handleApprove} disabled={isApproving || isApproveConfirming} className="w-full">
-                            {isApproving || isApproveConfirming ? "Approving..." : "Approve Tokens"}
+                        <Button
+                            onClick={handleApprove}
+                            disabled={isApproving || isApproveConfirming}
+                            className="w-full"
+                        >
+                            {isApproving || isApproveConfirming
+                                ? "Approving..."
+                                : "Approve Tokens"}
                         </Button>
                     ) : (
-                        <Button onClick={handleSend} disabled={isSending || isSendConfirming} className="w-full">
-                            {isSending || isSendConfirming ? "Sending..." : "Send Tokens"}
+                        <Button
+                            onClick={handleSend}
+                            disabled={isSending || isSendConfirming}
+                            className="w-full"
+                        >
+                            {isSending || isSendConfirming ? "Sending..." : "Send"}
                         </Button>
                     )}
                 </CardContent>

@@ -1,9 +1,8 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TokenLockerContract } from "@/lib/config";
+import { TokenLocker } from "@/lib/config";
 import { useLockInfo } from "@/lib/hooks/useLockInfo";
 import { useUserLocks } from "@/lib/hooks/useUserLocks";
 import { formatDistanceToNow } from "date-fns";
@@ -21,8 +20,8 @@ function LockInfo({ lockId }: { lockId: bigint }) {
 
     const handleUnlock = () => {
         writeContract({
-            address: TokenLockerContract.address,
-            abi: TokenLockerContract.abi,
+            address: TokenLocker.address,
+            abi: TokenLocker.abi,
             functionName: "unlock",
             args: [lockId]
         })
@@ -40,20 +39,30 @@ function LockInfo({ lockId }: { lockId: bigint }) {
         return <div>Loading lock...</div>
     }
 
-    const unlockDate = new Date(Number(lock.unlockDate) * 1000);
-    const isUnlockable = unlockDate < new Date() && !lock.withdrawn;
+    const lockData = lock as {
+        token: `0x${string}`;
+        amount: bigint;
+        unlockDate: bigint;
+        name: string;
+        description: string;
+        withdrawn: boolean;
+        owner: `0x${string}`;
+    };
+
+    const unlockDate = new Date(Number(lockData.unlockDate) * 1000);
+    const isUnlockable = unlockDate < new Date() && !lockData.withdrawn;
 
     return (
         <div className="border p-4 rounded-lg">
             <div className="flex justify-between items-center">
                 <div>
-                    <h3 className="font-bold">{lock.name}</h3>
-                    <p className="text-sm text-gray-500">{lock.description}</p>
-                    <p className="text-xs text-gray-400 mt-1">{lock.token}</p>
+                    <h3 className="font-bold">{lockData.name}</h3>
+                    <p className="text-sm text-gray-500">{lockData.description}</p>
+                    <p className="text-xs text-gray-400 mt-1">{lockData.token}</p>
                 </div>
                 <div className="text-right">
-                    <p className="font-bold text-lg">{lock.amount.toString()}</p>
-                    {lock.withdrawn ? (
+                    <p className="font-bold text-lg">{lockData.amount.toString()}</p>
+                    {lockData.withdrawn ? (
                         <span className="text-sm text-green-500">Withdrawn</span>
                     ) : (
                         <p className="text-sm text-gray-500">
@@ -95,7 +104,7 @@ export default function TokenLockerPage() {
         abi: erc20Abi,
         address: tokenAddress as `0x${string}`,
         functionName: 'allowance',
-        args: [address!, TokenLockerContract.address],
+        args: [address!, TokenLocker.address],
         query: {
             enabled: !!address && !!tokenAddress,
         }
@@ -113,15 +122,15 @@ export default function TokenLockerPage() {
             address: tokenAddress as `0x${string}`,
             abi: erc20Abi,
             functionName: "approve",
-            args: [TokenLockerContract.address, maxUint256]
+            args: [TokenLocker.address, maxUint256]
         })
     }
 
     const handleLock = () => {
         const durationInSeconds = parseInt(duration) * 24 * 60 * 60;
         lockTokens({
-            address: TokenLockerContract.address,
-            abi: TokenLockerContract.abi,
+            address: TokenLocker.address,
+            abi: TokenLocker.abi,
             functionName: "lockTokens",
             args: [
                 tokenAddress as `0x${string}`,

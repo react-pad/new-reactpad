@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
-import { TokenLockerContract } from '@/lib/config';
+import { TokenLocker } from '@/lib/config';
 import { useBlockchainStore, type TokenLock } from '@/lib/store/blockchain-store';
 
 export function useLockInfo(lockId: bigint) {
@@ -11,8 +11,8 @@ export function useLockInfo(lockId: bigint) {
   const cachedLock = address ? getUserLock(address, lockId) : null;
 
   const { data: lock, isLoading, refetch } = useReadContract({
-    abi: TokenLockerContract.abi,
-    address: TokenLockerContract.address,
+    abi: TokenLocker.abi,
+    address: TokenLocker.address,
     functionName: 'getLock',
     args: [lockId],
     query: {

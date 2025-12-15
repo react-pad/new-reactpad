@@ -11,7 +11,7 @@ export default function NFTsPage() {
 
   const { data: nfts, isLoading } = useReadContract({
     abi: NFTFactoryContract.abi,
-    address: NFTFactoryContract.address,
+    address: NFTFactoryContract.address as `0x${string}`,
     functionName: 'deployments',
   });
 
@@ -41,9 +41,9 @@ export default function NFTsPage() {
 
         {isLoading && <p>Loading collections...</p>}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {nfts && nfts.map((nft) => (
+          {nfts && Array.isArray(nfts) ? (nfts as Array<{ nft: `0x${string}` }>).map((nft) => (
             <NFTCard nftAddress={nft.nft} key={nft.nft} />
-          ))}
+          )) : null}
         </div>
       </div>
     </div>

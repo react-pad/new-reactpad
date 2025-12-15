@@ -1,35 +1,49 @@
-
+"use client"
 import { Input } from "@/components/ui/input";
-import { PresaleCard } from "@/components/ui/presale-card";
-import { usePresales } from "@/lib/hooks/usePresales";
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { MarketCard } from "@/components/ui/market-card";
+import { useCachedMarkets } from "@/lib/hooks/useCachedMarkets";
 
-const statusFilters = [
+const filterOptions = [
   { label: "All", value: "all" },
-  { label: "Live", value: "live" },
-  { label: "Upcoming", value: "upcoming" },
-  { label: "Completed", value: "completed" }
+  { label: "New Launches", value: "new" },
+  { label: "Top Market Cap", value: "top" },
 ];
 
-export default function ProjectsPage() {
+export default function MarketsPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const { markets, isLoading } = useCachedMarkets();
 
-  const { presales, isLoading } = usePresales();
+  const sortedMarkets = [...markets].sort((a, b) => {
+    if (!a || !b) return 0;
+    switch (activeFilter) {
+      case "new":
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      case "top":
+        return b.marketCap - a.marketCap;
+      default:
+        return 0; // No specific sort for "all"
+    }
+  });
 
-  // Filtering is not implemented with live data yet.
-  // This will require fetching status for each presale and then filtering.
+  const filteredMarkets = sortedMarkets.filter(market => {
+    if (!market) return false;
+    const matchesSearch = market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      market.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 max-w-7xl">
-        <div className="mb-12 sm:mb-20 text-right lg:text-left">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
-            PROJECT<br />LAUNCHPAD
+      <div className="container mx-auto px-6 py-20 max-w-7xl">
+        <div className="mb-20">
+          <h1 className="text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
+            Live<br />Markets
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl font-light max-w-2xl lg:max-w-2xl ml-auto lg:ml-0">
-            Discover, fund, and launch the next generation of decentralized applications.
+          <p className="text-xl md:text-2xl font-light max-w-2xl">
+            Discover and trade the latest tokens on the Reactive network.
           </p>
         </div>
 
@@ -37,18 +51,18 @@ export default function ProjectsPage() {
           <div className="relative">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black w-6 h-6" />
             <Input
-              placeholder="SEARCH PROJECTS..."
+              placeholder="SEARCH MARKETS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-16 w-full h-16 text-lg border-2 border-black focus:ring-0 focus:border-black font-medium uppercase placeholder:text-gray-400"
             />
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2">
-            {statusFilters.map(filter => (
+          <div className="flex items-center gap-3">
+            {filterOptions.map(filter => (
               <button
                 key={filter.value}
                 onClick={() => setActiveFilter(filter.value)}
-                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-2 border-black transition-all whitespace-nowrap ${activeFilter === filter.value
+                className={`px-6 py-3 text-sm font-bold uppercase tracking-wider border-2 border-black transition-all ${activeFilter === filter.value
                   ? "bg-black text-white"
                   : "bg-white text-black hover:bg-black hover:text-white"
                   }`}
@@ -59,12 +73,15 @@ export default function ProjectsPage() {
           </div>
         </div>
 
-        {isLoading && <p>Loading projects...</p>}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {presales && presales.map((presale) => (
-            <PresaleCard presaleAddress={presale} key={presale} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="text-center">Loading markets...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredMarkets.map((market) => (
+              market && <MarketCard market={market} key={market.id} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -53,7 +53,7 @@ export default function CreateNftPage() {
         const args: unknown[] = isETH ? [params] : [params, paymentToken as `0x${string}`];
 
         writeContract({
-            address: NFTFactoryContract.address,
+            address: NFTFactoryContract.address as `0x${string}`,
             abi: NFTFactoryContract.abi,
             functionName,
             args: args as never

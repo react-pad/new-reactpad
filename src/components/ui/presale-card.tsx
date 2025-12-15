@@ -1,5 +1,3 @@
-
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Project } from "@/components/ui/project-card";
 import { LaunchpadPresaleContract } from "@/lib/config";
@@ -31,8 +29,8 @@ function CountdownTimer({ targetDate, isStart = false }: { targetDate: Date; isS
 
     return (
         <div className="text-sm">
-            <span className="font-bold uppercase tracking-wider text-xs sm:text-sm">{isStart ? "STARTS IN:" : "ENDS IN:"}</span>
-            <div className="font-mono mt-2 text-lg sm:text-xl font-black">
+            <span className="font-bold uppercase tracking-wider">{isStart ? "STARTS IN:" : "ENDS IN:"}</span>
+            <div className="font-mono mt-2 text-xl font-black">
                 {timeLeft.days}D {timeLeft.hours}H {timeLeft.minutes}M {timeLeft.seconds}S
             </div>
         </div>
@@ -112,23 +110,23 @@ export function PresaleCard({ presaleAddress }: { presaleAddress: `0x${string}` 
                 {/* Status indicator */}
                 <div className={`absolute top-0 right-0 w-4 h-4 border-2 border-black ${getStatusColor()}`}></div>
 
-                <div className="flex items-center space-x-3 sm:space-x-4 mb-6">
-                    <div className="border-2 border-black rounded-full p-1 bg-white flex-shrink-0">
-                        <Avatar className="w-12 h-12 sm:w-14 sm:h-14 border-2 border-black rounded-full">
+                <div className="flex items-center space-x-4 mb-6">
+                    <div className="border-2 border-black rounded-full p-1 bg-white">
+                        <Avatar className="w-14 h-14 border-2 border-black rounded-full">
                             <AvatarImage src={project.logo} alt={`${project.name} logo`} />
-                            <AvatarFallback className="text-base sm:text-lg font-black uppercase">
+                            <AvatarFallback className="text-lg font-black uppercase">
                                 {project.name.slice(0, 2)}
                             </AvatarFallback>
                         </Avatar>
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <h3 className="text-xl sm:text-2xl font-black uppercase tracking-tight leading-tight break-words">
+                    <div className="min-w-0">
+                        <h3 className="text-2xl font-black uppercase tracking-tight leading-tight break-words">
                             {project.name}
                         </h3>
                     </div>
                 </div>
 
-                <p className="font-medium mb-6 min-h-[3rem] text-sm sm:text-base">{project.description}</p>
+                <p className="font-medium mb-6 min-h-[3rem]">{project.description}</p>
 
                 <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
