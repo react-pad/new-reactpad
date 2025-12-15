@@ -11,9 +11,9 @@ import { Label } from "@/components/ui/label";
 import { PresaleFactory, LaunchpadPresaleContract, OWNER } from "@/lib/config";
 // import { useSearchParams, useRouter } from "next/navigation";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { erc20Abi, parseEther, decodeEventLog, formatEther, type Address } from "viem";
+import { erc20Abi, parseEther, decodeEventLog, formatEther, type Address, type Abi } from "viem";
 import {
     useAccount,
     useSendTransaction,
@@ -23,6 +23,7 @@ import {
 import { readContract, readContracts } from "wagmi/actions";
 import { config } from "@/components/Providers";
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
+import { LaunchpadService } from "@/lib/services/launchpad-service";
 
 interface PresaleFormData {
     saleToken: string;
@@ -88,34 +89,52 @@ function CreatePresaleForm({
 
         setIsChecking(true);
         try {
-            const allPresales = await readContract(config, {
+            // First get the total number of presales
+            const totalPresales = await readContract(config, {
                 address: PresaleFactory.address as Address,
                 abi: PresaleFactory.abi,
-                functionName: "allPresales",
-            }) as `0x${string}`[];
+                functionName: "totalPresales",
+            }) as bigint;
 
-            if (allPresales && allPresales.length > 0) {
-                const results = await readContracts(config, {
-                    contracts: allPresales.map((presale) => ({
-                        address: presale,
-                        abi: LaunchpadPresaleContract.abi,
-                        functionName: "saleToken",
+            if (totalPresales > 0) {
+                // Fetch all presale addresses
+                const presaleAddresses = await readContracts(config, {
+                    contracts: Array.from({ length: Number(totalPresales) }, (_, i) => ({
+                        address: PresaleFactory.address as Address,
+                        abi: PresaleFactory.abi as Abi,
+                        functionName: "allPresales",
+                        args: [BigInt(i)],
                     })),
                 });
 
-                const existingPresale = results.find(
-                    (res) => typeof res.result === 'string' && res.result.toLowerCase() === saleToken.toLowerCase()
-                );
+                const allPresales = presaleAddresses
+                    .map(res => res.result as `0x${string}`)
+                    .filter(Boolean);
 
-                if (existingPresale) {
-                    toast.error("A presale for this token already exists.", {
-                        action: {
-                            label: "View Projects",
-                            onClick: () => router("/projects"),
-                        },
+                if (allPresales.length > 0) {
+                    // Check if any presale uses the same sale token
+                    const results = await readContracts(config, {
+                        contracts: allPresales.map((presale) => ({
+                            address: presale,
+                            abi: LaunchpadPresaleContract.abi,
+                            functionName: "saleToken",
+                        })),
                     });
-                    setIsChecking(false);
-                    return;
+
+                    const existingPresale = results.find(
+                        (res) => typeof res.result === 'string' && res.result.toLowerCase() === saleToken.toLowerCase()
+                    );
+
+                    if (existingPresale) {
+                        toast.error("A presale for this token already exists.", {
+                            action: {
+                                label: "View Projects",
+                                onClick: () => router("/projects"),
+                            },
+                        });
+                        setIsChecking(false);
+                        return;
+                    }
                 }
             }
         } catch (e) {
@@ -476,24 +495,82 @@ export default function CreatePresalePage() {
 
     const {
         data: receipt,
-        isLoading: _isConfirming,
         isSuccess: isConfirmed,
     } = useWaitForTransactionReceipt({ hash: creationHash });
 
+    const savePresaleToDatabase = useCallback(async (presaleAddress: `0x${string}`, txHash: string) => {
+        try {
+            // Fetch token details from blockchain
+            const [tokenNameResult, tokenSymbolResult, tokenDecimalsResult] = await readContracts(config, {
+                contracts: [
+                    {
+                        address: formData.saleToken as `0x${string}`,
+                        abi: erc20Abi,
+                        functionName: "name",
+                    },
+                    {
+                        address: formData.saleToken as `0x${string}`,
+                        abi: erc20Abi,
+                        functionName: "symbol",
+                    },
+                    {
+                        address: formData.saleToken as `0x${string}`,
+                        abi: erc20Abi,
+                        functionName: "decimals",
+                    },
+                ],
+            });
+
+            const tokenName = tokenNameResult.result as string;
+            const tokenSymbol = tokenSymbolResult.result as string;
+            const tokenDecimals = tokenDecimalsResult.result as number;
+
+            // Save to Supabase launchpad_presales table
+            await LaunchpadService.createPresale({
+                presale_address: presaleAddress.toLowerCase(),
+                sale_token_address: formData.saleToken.toLowerCase(),
+                payment_token_address: formData.paymentToken
+                    ? formData.paymentToken.toLowerCase()
+                    : undefined,
+                token_name: tokenName,
+                token_symbol: tokenSymbol,
+                token_decimals: tokenDecimals,
+                rate: (Number(formData.rate) * 100).toString(), // Scale rate by 100
+                soft_cap: parseEther(formData.softCap).toString(),
+                hard_cap: parseEther(formData.hardCap).toString(),
+                min_contribution: parseEther(formData.minContribution).toString(),
+                max_contribution: parseEther(formData.maxContribution).toString(),
+                start_time: new Date(formData.startTime).toISOString(),
+                end_time: new Date(formData.endTime).toISOString(),
+                owner_address: formData.owner.toLowerCase(),
+                creation_tx_hash: txHash,
+            });
+
+            toast.success("Presale saved to database!");
+        } catch (error) {
+            console.error("Error saving presale to database:", error);
+            toast.error("Failed to save presale to database. Please contact support.");
+        }
+    }, [formData]);
+
     useEffect(() => {
-        if (isConfirmed && receipt) {
+        if (isConfirmed && receipt && creationHash) {
             toast.success("Presale created successfully!");
             for (const log of receipt.logs) {
                 try {
                     const event = decodeEventLog({
-                        abi: PresaleFactory.abi,
+                        abi: PresaleFactory.abi as Abi,
                         data: log.data,
                         topics: log.topics,
                     });
                     if (event.eventName === "PresaleCreated" && event.args && 'presale' in event.args) {
-                        setNewPresaleAddress(event.args.presale as `0x${string}`);
+                        const presaleAddress = event.args.presale as `0x${string}`;
+                        setNewPresaleAddress(presaleAddress);
                         // Invalidate the presales cache to force refetch
                         setPresales([]);
+
+                        // Save presale to Supabase with transaction hash
+                        savePresaleToDatabase(presaleAddress, creationHash);
                         break;
                     }
                 } catch {
@@ -501,7 +578,7 @@ export default function CreatePresalePage() {
                 }
             }
         }
-    }, [isConfirmed, receipt, setPresales]);
+    }, [isConfirmed, receipt, creationHash, setPresales, savePresaleToDatabase]);
 
     return (
         <div className="container mx-auto px-4 py-12 text-black">

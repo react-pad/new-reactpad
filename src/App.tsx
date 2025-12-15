@@ -15,6 +15,8 @@ import NFTsPage from "./pages/nfts/page";
 import Home from "./pages/page";
 import ProjectDetailPage from "./pages/projects/[id]/page";
 import ProjectsPage from "./pages/projects/page";
+import AdminDashboard from "./pages/admin/page";
+import AdminPresales from "./pages/admin/presales/page";
 import RootLayout from "./RootLayout";
 
 function App() {
@@ -38,6 +40,8 @@ function App() {
             <Route path="/nfts/:id" element={<NFTDetailPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/presales" element={<AdminPresales />} />
           </Route>
         </Routes>
       </BrowserRouter>

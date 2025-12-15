@@ -2,36 +2,29 @@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState } from "react";
-import { MarketCard } from "@/components/ui/market-card";
-import { useCachedMarkets } from "@/lib/hooks/useCachedMarkets";
+import { PresaleCard } from "@/components/ui/presale-card";
+import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
+import type { LaunchpadPresaleFilter } from "@/lib/hooks/useLaunchpadPresales";
 
-const filterOptions = [
+const filterOptions: Array<{ label: string; value: LaunchpadPresaleFilter }> = [
   { label: "All", value: "all" },
-  { label: "New Launches", value: "new" },
-  { label: "Top Market Cap", value: "top" },
+  { label: "Live", value: "live" },
+  { label: "Upcoming", value: "upcoming" },
+  { label: "Ended", value: "ended" },
 ];
 
-export default function MarketsPage() {
-  const [activeFilter, setActiveFilter] = useState("all");
+export default function ProjectsPage() {
+  const [activeFilter, setActiveFilter] = useState<LaunchpadPresaleFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const { markets, isLoading } = useCachedMarkets();
+  const { presales, isLoading } = useLaunchpadPresales(activeFilter);
 
-  const sortedMarkets = [...markets].sort((a, b) => {
-    if (!a || !b) return 0;
-    switch (activeFilter) {
-      case "new":
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      case "top":
-        return b.marketCap - a.marketCap;
-      default:
-        return 0; // No specific sort for "all"
-    }
-  });
-
-  const filteredMarkets = sortedMarkets.filter(market => {
-    if (!market) return false;
-    const matchesSearch = market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      market.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredPresales = presales.filter(presale => {
+    if (!presale) return false;
+    const matchesSearch =
+      presale.token_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      presale.token_symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      presale.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      presale.project_description?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -40,10 +33,10 @@ export default function MarketsPage() {
       <div className="container mx-auto px-6 py-20 max-w-7xl">
         <div className="mb-20">
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
-            Live<br />Markets
+            Launchpad<br />Projects
           </h1>
           <p className="text-xl md:text-2xl font-light max-w-2xl">
-            Discover and trade the latest tokens on the Reactive network.
+            Participate in token presales and support new projects on the Reactive network.
           </p>
         </div>
 
@@ -51,7 +44,7 @@ export default function MarketsPage() {
           <div className="relative">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-black w-6 h-6" />
             <Input
-              placeholder="SEARCH MARKETS..."
+              placeholder="SEARCH PROJECTS..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-16 w-full h-16 text-lg border-2 border-black focus:ring-0 focus:border-black font-medium uppercase placeholder:text-gray-400"
@@ -74,11 +67,22 @@ export default function MarketsPage() {
         </div>
 
         {isLoading ? (
-          <div className="text-center">Loading markets...</div>
+          <div className="text-center text-lg font-medium">Loading projects...</div>
+        ) : filteredPresales.length === 0 ? (
+          <div className="text-center py-20">
+            <p className="text-2xl font-bold uppercase mb-2">No Projects Found</p>
+            <p className="text-gray-600">
+              {searchQuery
+                ? "Try adjusting your search query"
+                : activeFilter === "all"
+                  ? "No presales available yet"
+                  : `No ${activeFilter} presales at the moment`}
+            </p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMarkets.map((market) => (
-              market && <MarketCard market={market} key={market.id} />
+            {filteredPresales.map((presale) => (
+              <PresaleCard presaleAddress={presale.presale_address as `0x${string}`} key={presale.id} />
             ))}
           </div>
         )}

@@ -4438,7 +4438,6 @@ export const erc20Abi = [
 
 
 export const LaunchpadPresaleContract = {
-    // This ABI is for an instance of a presale, the address will be dynamic
     abi: [
         {
             "inputs": [
