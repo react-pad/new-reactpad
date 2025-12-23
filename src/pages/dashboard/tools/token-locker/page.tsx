@@ -200,23 +200,23 @@ export default function TokenLockerPage() {
     }, [isApproveSuccess, refetchAllowance]);
 
     useEffect(() => {
-        if (isLockSuccess) {
-            toast.success("Tokens locked successfully!");
+        if (isLockSuccess && lockHash) {
+            toast.success(`Tokens locked successfully! Tx: ${lockHash.slice(0, 10)}...${lockHash.slice(-8)}`);
             refetchLocks();
             setAmount("");
             setDuration("");
             setName("");
             setDescription("");
         }
-    }, [isLockSuccess, refetchLocks]);
+    }, [isLockSuccess, lockHash, refetchLocks]);
 
     useEffect(() => {
-        if (isUnlockSuccess) {
-            toast.success("Tokens unlocked successfully!");
+        if (isUnlockSuccess && unlockHash) {
+            toast.success(`Tokens unlocked successfully! Tx: ${unlockHash.slice(0, 10)}...${unlockHash.slice(-8)}`);
             refetchLocks();
             setUnlockingId(null);
         }
-    }, [isUnlockSuccess, refetchLocks]);
+    }, [isUnlockSuccess, unlockHash, refetchLocks]);
 
     return (
         <div className="container mx-auto px-4 py-12 text-black">

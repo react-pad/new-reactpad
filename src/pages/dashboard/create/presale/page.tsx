@@ -2,18 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// import {
-//   OWNER,
-//   PresaleFactoryContract,
-//   LaunchpadPresaleContract,
-// } from "@/lib/config";
-
-import { PresaleFactory, LaunchpadPresaleContract, OWNER } from "@/lib/config";
-// import { useSearchParams, useRouter } from "next/navigation";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { config } from "@/config/wagmi.config";
+import { LaunchpadPresaleContract, OWNER, PresaleFactory } from "@/lib/config";
+import { LaunchpadService } from "@/lib/services/launchpad-service";
+import { useBlockchainStore } from "@/lib/store/blockchain-store";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { erc20Abi, parseEther, decodeEventLog, formatEther, type Address, type Abi } from "viem";
+import { decodeEventLog, erc20Abi, formatEther, parseEther, type Abi, type Address } from "viem";
 import {
     useAccount,
     useSendTransaction,
@@ -21,9 +17,6 @@ import {
     useWriteContract,
 } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
-import { config } from "@/config/wagmi.config";
-import { useBlockchainStore } from "@/lib/store/blockchain-store";
-import { LaunchpadService } from "@/lib/services/launchpad-service";
 
 interface PresaleFormData {
     saleToken: string;
@@ -44,7 +37,7 @@ function CreatePresaleForm({
     onPresaleCreated,
 }: {
     formData: PresaleFormData;
-    setFormData: (data: PresaleFormData) => void;
+    setFormData: React.Dispatch<React.SetStateAction<PresaleFormData>>;
     onPresaleCreated: (hash: `0x${string}`) => void;
 }) {
     const { address } = useAccount();
@@ -69,9 +62,9 @@ function CreatePresaleForm({
 
     useEffect(() => {
         if (address && !owner) {
-            setFormData({ ...formData, owner: address });
+            setFormData((prev) => ({ ...prev, owner: address }));
         }
-    }, [address, owner, setFormData, formData]);
+    }, [address, owner, setFormData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -477,9 +470,6 @@ export default function CreatePresalePage() {
     const [creationHash, setCreationHash] = useState<`0x${string}` | undefined>(
         undefined
     );
-    const [newPresaleAddress, setNewPresaleAddress] = useState<
-        `0x${string}` | null
-    >(null);
     const [formData, setFormData] = useState({
         saleToken: searchParams.get("token") ?? "",
         paymentToken: "",
@@ -495,8 +485,41 @@ export default function CreatePresalePage() {
 
     const {
         data: receipt,
+        isLoading: isConfirming,
         isSuccess: isConfirmed,
     } = useWaitForTransactionReceipt({ hash: creationHash });
+
+    // Derive presale address from receipt instead of using state
+    const newPresaleAddress = useMemo(() => {
+        if (!receipt) return null;
+        for (const log of receipt.logs) {
+            try {
+                const event = decodeEventLog({
+                    abi: PresaleFactory.abi as Abi,
+                    data: log.data,
+                    topics: log.topics,
+                });
+                if (event.eventName === "PresaleCreated" && event.args && 'presale' in event.args) {
+                    return event.args.presale as `0x${string}`;
+                }
+            } catch {
+                // Not the event we're looking for
+            }
+        }
+        return null;
+    }, [receipt]);
+
+    const creationToastId = useRef<string | number | null>(null);
+    const hasProcessedRef = useRef(false);
+
+    useEffect(() => {
+        if (isConfirming && !creationToastId.current) {
+            creationToastId.current = toast.loading("Presale creation confirming...");
+        } else if (!isConfirming && creationToastId.current) {
+            toast.dismiss(creationToastId.current);
+            creationToastId.current = null;
+        }
+    }, [isConfirming]);
 
     const savePresaleToDatabase = useCallback(async (presaleAddress: `0x${string}`, txHash: string) => {
         try {
@@ -554,31 +577,15 @@ export default function CreatePresalePage() {
     }, [formData]);
 
     useEffect(() => {
-        if (isConfirmed && receipt && creationHash) {
-            toast.success("Presale created successfully!");
-            for (const log of receipt.logs) {
-                try {
-                    const event = decodeEventLog({
-                        abi: PresaleFactory.abi as Abi,
-                        data: log.data,
-                        topics: log.topics,
-                    });
-                    if (event.eventName === "PresaleCreated" && event.args && 'presale' in event.args) {
-                        const presaleAddress = event.args.presale as `0x${string}`;
-                        setNewPresaleAddress(presaleAddress);
-                        // Invalidate the presales cache to force refetch
-                        setPresales([]);
-
-                        // Save presale to Supabase with transaction hash
-                        savePresaleToDatabase(presaleAddress, creationHash);
-                        break;
-                    }
-                } catch {
-                    // Not the event we're looking for
-                }
-            }
+        if (isConfirmed && newPresaleAddress && creationHash && !hasProcessedRef.current) {
+            hasProcessedRef.current = true;
+            toast.success(`Presale created successfully! Tx: ${creationHash.slice(0, 10)}...${creationHash.slice(-8)}`);
+            // Invalidate the presales cache to force refetch
+            setPresales([]);
+            // Save presale to Supabase with transaction hash
+            savePresaleToDatabase(newPresaleAddress, creationHash);
         }
-    }, [isConfirmed, receipt, creationHash, setPresales, savePresaleToDatabase]);
+    }, [isConfirmed, newPresaleAddress, creationHash, setPresales, savePresaleToDatabase]);
 
     return (
         <div className="container mx-auto px-4 py-12 text-black">

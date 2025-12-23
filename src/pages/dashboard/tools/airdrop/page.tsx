@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AirdropMultisenderContract } from "@/lib/config";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { erc20Abi, formatEther, maxUint256, parseEther } from "viem";
@@ -133,6 +133,30 @@ export default function AirdropPage() {
     const { isLoading: isSendConfirming, isSuccess: isSendConfirmed } =
         useWaitForTransactionReceipt({ hash: sendHash });
 
+    // Track toast IDs to prevent duplicates and allow dismissal
+    const approveToastId = useRef<string | number | null>(null);
+    const sendToastId = useRef<string | number | null>(null);
+
+    // Show loading toast while approval is confirming
+    useEffect(() => {
+        if (isApproveConfirming && !approveToastId.current) {
+            approveToastId.current = toast.loading("Approval confirming...");
+        } else if (!isApproveConfirming && approveToastId.current) {
+            toast.dismiss(approveToastId.current);
+            approveToastId.current = null;
+        }
+    }, [isApproveConfirming]);
+
+    // Show loading toast while send is confirming
+    useEffect(() => {
+        if (isSendConfirming && !sendToastId.current) {
+            sendToastId.current = toast.loading("Transaction confirming...");
+        } else if (!isSendConfirming && sendToastId.current) {
+            toast.dismiss(sendToastId.current);
+            sendToastId.current = null;
+        }
+    }, [isSendConfirming]);
+
     useEffect(() => {
         if (isApproveConfirmed) {
             toast.success("Approval successful! You can now send your tokens.");
@@ -141,11 +165,11 @@ export default function AirdropPage() {
     }, [isApproveConfirmed, refetchAllowance]);
 
     useEffect(() => {
-        if (isSendConfirmed) {
-            toast.success("Tokens sent successfully!");
+        if (isSendConfirmed && sendHash) {
+            toast.success(`Tokens sent successfully! Tx: ${sendHash.slice(0, 10)}...${sendHash.slice(-8)}`);
             setRecipientsData("");
         }
-    }, [isSendConfirmed]);
+    }, [isSendConfirmed, sendHash]);
 
     useEffect(() => {
         const err = sendError || approveError;
