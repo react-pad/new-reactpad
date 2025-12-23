@@ -1,13 +1,14 @@
-import { REACT_TOKEN_ADDRESS, REACT_TOKEN_PRICE_USD } from "@/lib/config";
+import { REACT_TOKEN_PRICE_USD } from "@/lib/config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
   LayoutDashboard,
-  PlusSquare,
-  Rocket
+  Pencil,
+  Rocket,
+  WalletMinimal
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { sepolia } from "viem/chains";
+import { baseSepolia } from "viem/chains";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
 
 const navItems = [
@@ -25,11 +26,10 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
   const { switchChain } = useSwitchChain();
 
   const isConnected = !!address;
-  const isWrongNetwork = isConnected && chain?.id !== sepolia.id;
+  const isWrongNetwork = isConnected && chain?.id !== baseSepolia.id;
 
   const { data: balanceData } = useBalance({
     address: address,
-    token: REACT_TOKEN_ADDRESS as `0x${string}`,
   });
 
   const balance = balanceData ? parseFloat(balanceData.formatted) : 0;
@@ -56,13 +56,12 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
           <div className="mx-6 my-3 p-4 border-4 border-black bg-[#2FFF2F] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-black border-2 border-black"></div>
                 <span className="text-xs font-mono font-black uppercase">
                   {address?.slice(0, 6)}...{address?.slice(-4)}
                 </span>
               </div>
               <button className="hover:scale-110 transition-transform">
-                <PlusSquare size={18} strokeWidth={3} />
+                <WalletMinimal size={18} strokeWidth={3} />
               </button>
             </div>
             <div>
@@ -76,7 +75,13 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
             </div>
             {isWrongNetwork ? (
               <button
-                onClick={() => switchChain({ chainId: sepolia.id })}
+                onClick={async () => {
+                  try {
+                    await switchChain({ chainId: baseSepolia.id });
+                  } catch (error) {
+                    console.error("Failed to switch network:", error);
+                  }
+                }}
                 type="button"
                 className="w-full mt-4 bg-yellow-500 text-black font-black uppercase text-xs tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-2"
               >
@@ -126,8 +131,8 @@ export function Sidebar({ children }: { children: React.ReactNode; }) {
                   : "bg-[#FF00F5] text-black hover:bg-[#FF4911] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
                   }`}
               >
-                <PlusSquare className="w-5 h-5 mr-2" strokeWidth={3} />
-                CREATE PROJECT
+                <Pencil className="w-5 h-5 mr-2" strokeWidth={3} />
+                CREATE
               </Link>
             </div>
           </div>

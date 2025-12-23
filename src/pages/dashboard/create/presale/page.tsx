@@ -21,7 +21,7 @@ import {
     useWriteContract,
 } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
-import { config } from "@/components/Providers";
+import { config } from "@/config/wagmi.config";
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
 import { LaunchpadService } from "@/lib/services/launchpad-service";
 

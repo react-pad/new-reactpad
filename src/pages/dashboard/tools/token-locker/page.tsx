@@ -2,84 +2,57 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TokenLocker } from "@/lib/config";
-import { useLockInfo } from "@/lib/hooks/useLockInfo";
-import { useUserLocks } from "@/lib/hooks/useUserLocks";
+import { useAllLocks } from "@/lib/hooks/useAllLocks";
 import { formatDistanceToNow } from "date-fns";
 import { useSearchParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { erc20Abi, maxUint256, parseEther } from "viem";
+import { erc20Abi, maxUint256, parseUnits } from "viem";
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
-function LockInfo({ lockId }: { lockId: bigint }) {
-    const { lock, isLoading, refetch } = useLockInfo(lockId);
-
-    const { data: hash, writeContract } = useWriteContract();
-    const { isSuccess: isUnlocked, isLoading: isUnlocking } = useWaitForTransactionReceipt({ hash });
-
-    const handleUnlock = () => {
-        writeContract({
-            address: TokenLocker.address,
-            abi: TokenLocker.abi,
-            functionName: "unlock",
-            args: [lockId]
-        })
-    }
-
-    useEffect(() => {
-        if (isUnlocked) {
-            toast.success("Tokens unlocked successfully!");
-            refetch();
-        }
-    }, [isUnlocked, refetch])
-
-
-    if (isLoading || !lock) {
-        return <div>Loading lock...</div>
-    }
-
-    const lockData = lock as {
-        token: `0x${string}`;
-        amount: bigint;
-        unlockDate: bigint;
-        name: string;
-        description: string;
-        withdrawn: boolean;
-        owner: `0x${string}`;
-    };
-
-    const unlockDate = new Date(Number(lockData.unlockDate) * 1000);
-    const isUnlockable = unlockDate < new Date() && !lockData.withdrawn;
-
+function TokenLocksTable({ locks, onUnlock, unlockingId }: { locks: any[], onUnlock: (lockId: bigint) => void, unlockingId: bigint | null }) {
     return (
-        <div className="border p-4 rounded-lg">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h3 className="font-bold">{lockData.name}</h3>
-                    <p className="text-sm text-gray-500">{lockData.description}</p>
-                    <p className="text-xs text-gray-400 mt-1">{lockData.token}</p>
-                </div>
-                <div className="text-right">
-                    <p className="font-bold text-lg">{lockData.amount.toString()}</p>
-                    {lockData.withdrawn ? (
-                        <span className="text-sm text-green-500">Withdrawn</span>
-                    ) : (
-                        <p className="text-sm text-gray-500">
-                            Unlocks {formatDistanceToNow(unlockDate, { addSuffix: true })}
-                        </p>
-                    )}
-                </div>
-            </div>
-            {isUnlockable && (
-                <Button onClick={handleUnlock} disabled={isUnlocking} size="sm" className="mt-4">
-                    {isUnlocking ? "Unlocking..." : "Unlock"}
-                </Button>
-            )}
-        </div>
-    )
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Token</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Unlocks In</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {locks.map(lock => {
+                    const unlockDate = new Date(Number(lock.unlockDate) * 1000);
+                    const isUnlockable = unlockDate < new Date() && !lock.withdrawn;
+                    return (
+                        <TableRow key={lock.id}>
+                            <TableCell>
+                                <div className="font-medium">{lock.name}</div>
+                                <div className="text-sm text-gray-500">{lock.tokenSymbol}</div>
+                            </TableCell>
+                            <TableCell>{lock.formattedAmount}</TableCell>
+                            <TableCell>{formatDistanceToNow(unlockDate, { addSuffix: true })}</TableCell>
+                            <TableCell>
+                                {lock.withdrawn ? <span className="text-green-500">Withdrawn</span> : <span className="text-yellow-500">Locked</span>}
+                            </TableCell>
+                            <TableCell>
+                                {isUnlockable && (
+                                    <Button onClick={() => onUnlock(lock.id)} disabled={unlockingId === lock.id} size="sm">
+                                        {unlockingId === lock.id ? "Unlocking..." : "Unlock"}
+                                    </Button>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                    );
+                })}
+            </TableBody>
+        </Table>
+    );
 }
-
 
 export default function TokenLockerPage() {
     const [searchParams] = useSearchParams();
@@ -87,18 +60,36 @@ export default function TokenLockerPage() {
 
     const { data: lockHash, writeContract: lockTokens, isPending: isLocking, error: lockError } = useWriteContract();
     const { data: approveHash, writeContract: approve, isPending: isApproving, error: approveError } = useWriteContract();
+    const { data: unlockHash, writeContract: unlockTokens } = useWriteContract();
 
     const [tokenAddress, setTokenAddress] = useState(searchParams.get("token") ?? "");
     const [amount, setAmount] = useState("");
     const [duration, setDuration] = useState(""); // in days
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
+    const [unlockingId, setUnlockingId] = useState<bigint | null>(null);
+
+    const { data: tokenDecimals } = useReadContract({
+        abi: erc20Abi,
+        address: tokenAddress as `0x${string}`,
+        functionName: 'decimals',
+        query: {
+            enabled: !!tokenAddress,
+        }
+    });
 
     const isFormValid = useMemo(() => {
         return tokenAddress.trim() !== '' && amount.trim() !== '' && duration.trim() !== '' && name.trim() !== '';
     }, [tokenAddress, amount, duration, name]);
 
-    const parsedAmount = useMemo(() => amount ? parseEther(amount) : BigInt(0), [amount]);
+    const parsedAmount = useMemo(() => {
+        if (!amount || tokenDecimals === undefined) return BigInt(0);
+        try {
+            return parseUnits(amount, tokenDecimals);
+        } catch {
+            return BigInt(0);
+        }
+    }, [amount, tokenDecimals]);
 
     const { data: allowance, refetch: refetchAllowance } = useReadContract({
         abi: erc20Abi,
@@ -111,11 +102,11 @@ export default function TokenLockerPage() {
     });
 
     const needsApproval = useMemo(() => {
-        if (!allowance) return false;
+        if (allowance === undefined) return true;
         return allowance < parsedAmount;
     }, [allowance, parsedAmount]);
 
-    const { lockIds: userLocks, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks();
+    const { locks: userLocks, isLoading: isLoadingLocks, refetch: refetchLocks } = useAllLocks();
 
     const handleApprove = () => {
         approve({
@@ -141,6 +132,16 @@ export default function TokenLockerPage() {
             ]
         })
     }
+    
+    const handleUnlock = (lockId: bigint) => {
+        setUnlockingId(lockId);
+        unlockTokens({
+            address: TokenLocker.address,
+            abi: TokenLocker.abi,
+            functionName: "unlock",
+            args: [lockId]
+        })
+    }
 
     const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
         hash: approveHash,
@@ -148,18 +149,41 @@ export default function TokenLockerPage() {
     const { isLoading: isLockConfirming, isSuccess: isLockSuccess } = useWaitForTransactionReceipt({
         hash: lockHash,
     });
+    const { isLoading: isUnlockConfirming, isSuccess: isUnlockSuccess } = useWaitForTransactionReceipt({
+        hash: unlockHash,
+    });
+
+    // Track toast IDs to prevent duplicates and allow dismissal
+    const approveToastId = useRef<string | number | null>(null);
+    const lockToastId = useRef<string | number | null>(null);
+    const unlockToastId = useRef<string | number | null>(null);
 
     useEffect(() => {
-        if (isApproveConfirming) {
-            toast.loading("Approval confirming...");
+        if (isApproveConfirming && !approveToastId.current) {
+            approveToastId.current = toast.loading("Approval confirming...");
+        } else if (!isApproveConfirming && approveToastId.current) {
+            toast.dismiss(approveToastId.current);
+            approveToastId.current = null;
         }
     }, [isApproveConfirming]);
 
     useEffect(() => {
-        if (isLockConfirming) {
-            toast.loading("Lock confirming...");
+        if (isLockConfirming && !lockToastId.current) {
+            lockToastId.current = toast.loading("Lock confirming...");
+        } else if (!isLockConfirming && lockToastId.current) {
+            toast.dismiss(lockToastId.current);
+            lockToastId.current = null;
         }
     }, [isLockConfirming]);
+
+    useEffect(() => {
+        if (isUnlockConfirming && !unlockToastId.current) {
+            unlockToastId.current = toast.loading("Unlock confirming...");
+        } else if (!isUnlockConfirming && unlockToastId.current) {
+            toast.dismiss(unlockToastId.current);
+            unlockToastId.current = null;
+        }
+    }, [isUnlockConfirming]);
 
     useEffect(() => {
         const err = lockError || approveError;
@@ -185,6 +209,14 @@ export default function TokenLockerPage() {
             setDescription("");
         }
     }, [isLockSuccess, refetchLocks]);
+
+    useEffect(() => {
+        if (isUnlockSuccess) {
+            toast.success("Tokens unlocked successfully!");
+            refetchLocks();
+            setUnlockingId(null);
+        }
+    }, [isUnlockSuccess, refetchLocks]);
 
     return (
         <div className="container mx-auto px-4 py-12 text-black">
@@ -236,11 +268,7 @@ export default function TokenLockerPage() {
                         <CardContent>
                             {isLoadingLocks && <p>Loading your locks...</p>}
                             {userLocks && userLocks.length > 0 ? (
-                                <div className="space-y-4">
-                                    {(userLocks as bigint[]).map(lockId => (
-                                        <LockInfo key={lockId.toString()} lockId={lockId} />
-                                    ))}
-                                </div>
+                                <TokenLocksTable locks={userLocks} onUnlock={handleUnlock} unlockingId={unlockingId} />
                             ) : (
                                 <p>You have no active locks.</p>
                             )}

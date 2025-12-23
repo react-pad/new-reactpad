@@ -30,12 +30,13 @@ export interface Market {
 export interface TokenLock {
   id: bigint;
   token: Address;
+  owner: Address;
   amount: bigint;
+  lockDate: bigint;
   unlockDate: bigint;
+  withdrawn: boolean;
   name: string;
   description: string;
-  withdrawn: boolean;
-  owner: Address;
 }
 
 interface CacheMetadata {
@@ -318,6 +319,31 @@ export const useBlockchainStore = create<BlockchainStore>()(
     }),
     {
       name: 'blockchain-storage',
+      // Custom storage to handle BigInt serialization
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name);
+          if (!str) return null;
+          return JSON.parse(str, (_, value) => {
+            if (typeof value === 'string' && value.startsWith('__bigint__:')) {
+              return BigInt(value.slice(11));
+            }
+            return value;
+          });
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(
+            name,
+            JSON.stringify(value, (_, val) => {
+              if (typeof val === 'bigint') {
+                return `__bigint__:${val.toString()}`;
+              }
+              return val;
+            })
+          );
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
       // Only persist the data, not loading states
       partialize: (state) => ({
         userTokens: Object.fromEntries(
@@ -340,7 +366,7 @@ export const useBlockchainStore = create<BlockchainStore>()(
           ...state.presales,
           metadata: { ...state.presales.metadata, isLoading: false },
         },
-      }),
+      }) as BlockchainStore,
     }
   )
 );

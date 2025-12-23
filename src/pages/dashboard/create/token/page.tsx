@@ -93,7 +93,7 @@ export default function CreateTokenPage() {
       case TokenType.Burnable:
         functionName = "createBurnableToken";
         break;
-      case TokenType.Taxable:
+      case TokenType.Taxable: {
         functionName = "createTaxableToken";
         const taxParams = {
           taxWallet: taxWallet as `0x${string}`,
@@ -101,6 +101,7 @@ export default function CreateTokenPage() {
         }
         args.push(taxParams);
         break;
+      }
       case TokenType.NonMintable:
         functionName = "createNonMintableToken";
         break;

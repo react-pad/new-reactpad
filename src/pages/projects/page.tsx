@@ -82,7 +82,7 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPresales.map((presale) => (
-              <PresaleCard presaleAddress={presale.presale_address as `0x${string}`} key={presale.id} />
+              <PresaleCard presale={presale} key={presale.id} />
             ))}
           </div>
         )}

@@ -1,10 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Project } from "@/components/ui/project-card";
-import { LaunchpadPresaleContract } from "@/lib/config";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { erc20Abi, formatEther } from "viem";
-import { useReadContracts } from "wagmi";
+import { formatEther } from "viem";
+import type { LaunchpadPresale } from "@/lib/types/database";
+import { erc20Abi } from "viem";
+import { useReadContract } from "wagmi";
 
 function CountdownTimer({ targetDate, isStart = false }: { targetDate: Date; isStart?: boolean }) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -37,62 +38,68 @@ function CountdownTimer({ targetDate, isStart = false }: { targetDate: Date; isS
     );
 }
 
-export function PresaleCard({ presaleAddress }: { presaleAddress: `0x${string}` }) {
-    const presaleContract = {
-        address: presaleAddress,
-        abi: LaunchpadPresaleContract.abi,
-    } as const;
+function mapStatusToStatusType(status: LaunchpadPresale['status']): Project['statusType'] {
+    switch (status) {
+        case 'live':
+            return 'live';
+        case 'pending':
+            return 'upcoming';
+        case 'ended':
+        case 'cancelled':
+            return 'completed';
+        default:
+            return 'upcoming';
+    }
+}
 
-    const { data, isLoading } = useReadContracts({
-        contracts: [
-            { ...presaleContract, functionName: 'saleToken' },
-            { ...presaleContract, functionName: 'paymentToken' },
-            { ...presaleContract, functionName: 'startTime' },
-            { ...presaleContract, functionName: 'endTime' },
-            { ...presaleContract, functionName: 'hardCap' },
-            { ...presaleContract, functionName: 'totalRaised' },
-        ]
+export function PresaleCard({ presale }: { presale: LaunchpadPresale }) {
+    // Fetch payment token symbol if payment_token_address is provided
+    const { data: paymentTokenSymbol } = useReadContract({
+        address: presale.payment_token_address as `0x${string}` | undefined,
+        abi: erc20Abi,
+        functionName: 'symbol',
+        query: {
+            enabled: !!presale.payment_token_address,
+        }
     });
 
-    const [saleTokenAddress, paymentTokenAddress, startTime, endTime, hardCap, totalRaised] = data || [];
-
-    const { data: tokenData } = useReadContracts({
-        contracts: [
-            { address: saleTokenAddress?.result as `0x${string}`, abi: erc20Abi, functionName: 'name' },
-            { address: saleTokenAddress?.result as `0x${string}`, abi: erc20Abi, functionName: 'symbol' },
-            { address: paymentTokenAddress?.result as `0x${string}`, abi: erc20Abi, functionName: 'symbol' },
-        ],
-        query: {
-            enabled: !!saleTokenAddress?.result,
-        }
-    })
-
-    const [name, _symbol, paymentSymbol] = tokenData || [];
-
-    if (isLoading || !data || !tokenData) {
-        return <div className="border-4 border-black p-6 bg-[#FFF9F0] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">Loading...</div>;
-    }
-
-    const now = new Date().getTime() / 1000;
-    const statusType = now < (startTime?.result ?? 0) ? 'upcoming' : now > (endTime?.result ?? 0) ? 'completed' : 'live';
-
-    const raised = parseFloat(formatEther(totalRaised?.result as bigint ?? BigInt(0)));
-    const goal = parseFloat(formatEther(hardCap?.result as bigint ?? BigInt(0)));
+    // Convert wei values to ether
+    const raised = parseFloat(formatEther(BigInt(presale.total_raised || '0')));
+    const goal = parseFloat(formatEther(BigInt(presale.hard_cap || '0')));
     const progress = goal > 0 ? (raised / goal) * 100 : 0;
 
+    // Parse dates
+    const startTime = new Date(presale.start_time);
+    const endTime = new Date(presale.end_time);
+
+    // Determine status type
+    const statusType = mapStatusToStatusType(presale.status);
+
+    // Use project_name if available, otherwise token_name
+    const displayName = presale.project_name || presale.token_name;
+
+    // Use project_description if available, otherwise create a default description
+    const description = presale.project_description || `Presale for ${presale.token_name}.`;
+
+    // Use token_logo_url if available, otherwise use a placeholder
+    const logo = presale.token_logo_url || `https://placehold.co/60x60/8B5CF6/FFFFFF?text=${(presale.token_symbol || 'TO').slice(0, 2).toUpperCase()}`;
+
+    // Use payment token symbol if available, otherwise default to ETH
+    const currency = (paymentTokenSymbol as string) || 'ETH';
+
     const project: Project = {
-        id: presaleAddress,
-        name: name?.result as string ?? "Unknown",
-        description: `Presale for ${name?.result as string ?? "a new token"}.`,
-        logo: "https://placehold.co/60x60/8B5CF6/FFFFFF?text=EN",
-        statusType,
+        id: presale.id,
+        name: displayName,
+        description: description,
+        logo: logo,
+        statusType: statusType,
         raised: raised,
         goal: goal,
-        currency: paymentSymbol?.result as string ?? "ETH",
+        currency: currency,
         progress: progress,
-        endTime: new Date(Number(endTime?.result ?? 0) * 1000),
-        startTime: new Date(Number(startTime?.result ?? 0) * 1000),
-        website: "",
+        endTime: endTime,
+        startTime: startTime,
+        website: presale.project_website || '',
     }
 
     const getStatusColor = () => {
@@ -105,7 +112,7 @@ export function PresaleCard({ presaleAddress }: { presaleAddress: `0x${string}` 
     };
 
     return (
-        <Link to={`/projects/${presaleAddress}`}>
+        <Link to={`/projects/${presale.presale_address}`}>
             <div className="border-4 border-black p-6 bg-[#FFF9F0] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 group cursor-pointer h-full flex flex-col">
                 {/* Status indicator */}
                 <div className={`absolute top-0 right-0 w-4 h-4 border-2 border-black ${getStatusColor()}`}></div>
