@@ -1,11 +1,18 @@
-import { useMemo } from 'react';
-import { useAccount, useReadContracts } from 'wagmi';
-import { erc20Abi, formatUnits } from 'viem';
 import { TokenLocker } from '@/lib/config';
+import { useMemo } from 'react';
+import { erc20Abi, formatUnits } from 'viem';
+import { useReadContracts } from 'wagmi';
 import { useUserLocks } from './useUserLocks';
 
+interface LockResult {
+  token: `0x${string}`;
+  amount: bigint;
+  unlockTime: bigint;
+  owner: `0x${string}`;
+}
+
 export function useAllLocks() {
-  const { } = useAccount();
+  // const { address } = useAccount();
   const { lockIds, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks();
 
   const lockQueries = useMemo(() => {
@@ -27,14 +34,18 @@ export function useAllLocks() {
     }
   });
 
-  const tokenAddresses = useMemo(() => {
+  // Get unique token addresses to avoid redundant queries
+  const uniqueTokenAddresses = useMemo(() => {
     if (!lockData) return [];
-    return lockData.map(d => (d.result as any)?.token as `0x${string}`).filter(t => t);
+    const tokens = lockData
+      .map(d => (d.result as LockResult | undefined)?.token)
+      .filter((t): t is `0x${string}` => !!t);
+    return [...new Set(tokens)];
   }, [lockData]);
 
   const tokenInfoQueries = useMemo(() => {
-    if (tokenAddresses.length === 0) return [];
-    return tokenAddresses.flatMap(tokenAddress => [
+    if (uniqueTokenAddresses.length === 0) return [];
+    return uniqueTokenAddresses.flatMap(tokenAddress => [
       {
         abi: erc20Abi,
         address: tokenAddress,
@@ -46,27 +57,44 @@ export function useAllLocks() {
         functionName: 'decimals',
       }
     ]);
-  }, [tokenAddresses]);
+  }, [uniqueTokenAddresses]);
 
   const { data: tokenInfoData, isLoading: isLoadingTokenInfo } = useReadContracts({
     contracts: tokenInfoQueries,
     query: {
-      enabled: tokenAddresses.length > 0,
+      enabled: uniqueTokenAddresses.length > 0,
     }
   });
 
+  // Build a map of token address -> {symbol, decimals} for O(1) lookup
+  const tokenInfoMap = useMemo(() => {
+    if (!tokenInfoData || uniqueTokenAddresses.length === 0) return new Map();
+
+    const map = new Map<string, { symbol: string; decimals: number }>();
+    uniqueTokenAddresses.forEach((tokenAddress, i) => {
+      const symbol = tokenInfoData[i * 2]?.result as string;
+      const decimals = tokenInfoData[i * 2 + 1]?.result as number;
+      if (tokenAddress) {
+        map.set(tokenAddress.toLowerCase(), { symbol, decimals });
+      }
+    });
+    return map;
+  }, [tokenInfoData, uniqueTokenAddresses]);
+
   const locks = useMemo(() => {
-    if (!lockData || !tokenInfoData) return [];
-    
+    if (!lockData || !lockIds) return [];
+
     return lockData.map((d, i) => {
-      const lock = d.result as any;
+      const lock = d.result as LockResult | undefined;
       if (!lock) return null;
 
-      const tokenSymbol = tokenInfoData[i * 2]?.result as string;
-      const tokenDecimals = tokenInfoData[i * 2 + 1]?.result as number;
+      const tokenAddress = lock.token as `0x${string}`;
+      const tokenInfo = tokenAddress ? tokenInfoMap.get(tokenAddress.toLowerCase()) : undefined;
+      const tokenSymbol = tokenInfo?.symbol;
+      const tokenDecimals = tokenInfo?.decimals;
 
-      const formattedAmount = tokenDecimals !== undefined 
-        ? formatUnits(lock.amount, tokenDecimals) 
+      const formattedAmount = tokenDecimals !== undefined
+        ? formatUnits(lock.amount, tokenDecimals)
         : lock.amount.toString();
 
       return {
@@ -77,7 +105,7 @@ export function useAllLocks() {
       };
     }).filter(l => l !== null);
 
-  }, [lockData, tokenInfoData, lockIds]);
+  }, [lockData, tokenInfoMap, lockIds]);
 
   const refetch = () => {
     refetchLocks();
