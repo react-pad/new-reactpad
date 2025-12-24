@@ -158,6 +158,11 @@ export default function TokenLockerPage() {
     const lockToastId = useRef<string | number | null>(null);
     const unlockToastId = useRef<string | number | null>(null);
 
+    // Track processed transaction hashes to prevent duplicate success toasts
+    const processedLockHash = useRef<string | null>(null);
+    const processedUnlockHash = useRef<string | null>(null);
+    const processedApproveHash = useRef<string | null>(null);
+
     useEffect(() => {
         if (isApproveConfirming && !approveToastId.current) {
             approveToastId.current = toast.loading("Approval confirming...");
@@ -193,14 +198,16 @@ export default function TokenLockerPage() {
     }, [lockError, approveError]);
 
     useEffect(() => {
-        if (isApproveSuccess) {
+        if (isApproveSuccess && approveHash && processedApproveHash.current !== approveHash) {
+            processedApproveHash.current = approveHash;
             toast.success("Approval successful! You can now lock your tokens.");
             refetchAllowance();
         }
-    }, [isApproveSuccess, refetchAllowance]);
+    }, [isApproveSuccess, approveHash, refetchAllowance]);
 
     useEffect(() => {
-        if (isLockSuccess && lockHash) {
+        if (isLockSuccess && lockHash && processedLockHash.current !== lockHash) {
+            processedLockHash.current = lockHash;
             toast.success(`Tokens locked successfully! Tx: ${lockHash.slice(0, 10)}...${lockHash.slice(-8)}`);
             refetchLocks();
             setAmount("");
@@ -211,7 +218,8 @@ export default function TokenLockerPage() {
     }, [isLockSuccess, lockHash, refetchLocks]);
 
     useEffect(() => {
-        if (isUnlockSuccess && unlockHash) {
+        if (isUnlockSuccess && unlockHash && processedUnlockHash.current !== unlockHash) {
+            processedUnlockHash.current = unlockHash;
             toast.success(`Tokens unlocked successfully! Tx: ${unlockHash.slice(0, 10)}...${unlockHash.slice(-8)}`);
             refetchLocks();
             setUnlockingId(null);

@@ -55,45 +55,25 @@ export default function UserDashboardPage() {
         <h1 className="text-4xl font-bold mb-4">Your Dashboard</h1>
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Created Tokens</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading && <p>Loading your tokens...</p>}
-              {createdTokens && createdTokens.length > 0 ? (
-                <div className="divide-y divide-gray-200">
-                  {(createdTokens as `0x${string}`[]).map((token) => (
-                    <div key={token} className="py-3">
-                      <TokenInfo tokenAddress={token} />
-                    </div>
-                  ))}
+      <Card>
+        <CardHeader>
+          <CardTitle>My Created Tokens</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading && <p>Loading your tokens...</p>}
+          {createdTokens && createdTokens.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {(createdTokens as `0x${string}`[]).map((token) => (
+                <div key={token} className="py-3">
+                  <TokenInfo tokenAddress={token} />
                 </div>
-              ) : (
-                <p>You have not created any tokens yet.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span>KYC Status</span>
-                <span className="font-bold text-yellow-600">Pending</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              ))}
+            </div>
+          ) : (
+            <p>You have not created any tokens yet.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
