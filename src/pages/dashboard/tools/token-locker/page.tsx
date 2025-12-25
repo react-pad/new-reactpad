@@ -12,7 +12,17 @@ import { toast } from "sonner";
 import { erc20Abi, maxUint256, parseUnits } from "viem";
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
-function TokenLocksTable({ locks, onUnlock, unlockingId }: { locks: any[], onUnlock: (lockId: bigint) => void, unlockingId: bigint | null }) {
+interface Lock {
+    id: bigint;
+    token: `0x${string}`;
+    amount: bigint;
+    unlockTime: bigint;
+    owner: `0x${string}`;
+    tokenSymbol?: string;
+    formattedAmount: string;
+}
+
+function TokenLocksTable({ locks, onUnlock, unlockingId }: { locks: Lock[], onUnlock: (lockId: bigint) => void, unlockingId: bigint | null }) {
     return (
         <Table>
             <TableHeader>
@@ -26,23 +36,23 @@ function TokenLocksTable({ locks, onUnlock, unlockingId }: { locks: any[], onUnl
             </TableHeader>
             <TableBody>
                 {locks.map(lock => {
-                    const unlockDate = new Date(Number(lock.unlockDate) * 1000);
-                    const isUnlockable = unlockDate < new Date() && !lock.withdrawn;
+                    const unlockDate = new Date(Number(lock.unlockTime) * 1000);
+                    const isUnlocked = unlockDate < new Date();
                     return (
-                        <TableRow key={lock.id}>
+                        <TableRow key={lock.id.toString()}>
                             <TableCell>
-                                <div className="font-medium">{lock.name}</div>
-                                <div className="text-sm text-gray-500">{lock.tokenSymbol}</div>
+                                <div className="font-medium">{lock.tokenSymbol ?? 'Unknown'}</div>
+                                <div className="text-sm text-gray-500 font-mono">{lock.token.slice(0, 6)}...{lock.token.slice(-4)}</div>
                             </TableCell>
                             <TableCell>{lock.formattedAmount}</TableCell>
                             <TableCell>{formatDistanceToNow(unlockDate, { addSuffix: true })}</TableCell>
                             <TableCell>
-                                {lock.withdrawn ? <span className="text-green-500">Withdrawn</span> : <span className="text-yellow-500">Locked</span>}
+                                {isUnlocked ? <span className="text-green-500">Unlocked</span> : <span className="text-yellow-500">Locked</span>}
                             </TableCell>
                             <TableCell>
-                                {isUnlockable && (
+                                {isUnlocked && (
                                     <Button onClick={() => onUnlock(lock.id)} disabled={unlockingId === lock.id} size="sm">
-                                        {unlockingId === lock.id ? "Unlocking..." : "Unlock"}
+                                        {unlockingId === lock.id ? "Withdrawing..." : "Withdraw"}
                                     </Button>
                                 )}
                             </TableCell>
@@ -132,7 +142,7 @@ export default function TokenLockerPage() {
             ]
         })
     }
-    
+
     const handleUnlock = (lockId: bigint) => {
         setUnlockingId(lockId);
         unlockTokens({
