@@ -32,13 +32,15 @@ export function useUserTokens(forceRefetch = false) {
     if (address && isLoading) {
       setUserTokensLoading(address, true);
     }
-  }, [address, isLoading, setUserTokensLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, isLoading]);
 
   useEffect(() => {
     if (address && tokens && !isLoading) {
       setUserTokens(address, tokens as `0x${string}`[]);
     }
-  }, [address, tokens, isLoading, setUserTokens]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, tokens, isLoading]);
 
   const handleRefetch = async () => {
     if (address) {
