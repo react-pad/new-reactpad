@@ -1,4 +1,4 @@
-import { REACT_TOKEN_PRICE_USD } from "@/lib/config";
+import { REACT_TOKEN_PRICE_USD } from "@/config/config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,

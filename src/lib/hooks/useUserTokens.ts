@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
-import { TokenFactory } from '../config';
+import { TokenFactory } from '../../config/config';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 import type { Address } from 'viem';
 

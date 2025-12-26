@@ -3,9 +3,7 @@ import type { Project } from "@/components/ui/project-card";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { formatEther } from "viem";
-import type { LaunchpadPresale } from "@/lib/types/database";
-import { erc20Abi } from "viem";
-import { useReadContract } from "wagmi";
+import type { PresaleWithStatus } from "@/lib/hooks/useLaunchpadPresales";
 
 function CountdownTimer({ targetDate, isStart = false }: { targetDate: Date; isStart?: boolean }) {
     const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -38,57 +36,48 @@ function CountdownTimer({ targetDate, isStart = false }: { targetDate: Date; isS
     );
 }
 
-function mapStatusToStatusType(status: LaunchpadPresale['status']): Project['statusType'] {
+function mapStatusToStatusType(status: PresaleWithStatus['status']): Project['statusType'] {
     switch (status) {
         case 'live':
             return 'live';
-        case 'pending':
+        case 'upcoming':
             return 'upcoming';
         case 'ended':
         case 'cancelled':
+        case 'finalized':
             return 'completed';
         default:
             return 'upcoming';
     }
 }
 
-export function PresaleCard({ presale }: { presale: LaunchpadPresale }) {
-    // Fetch payment token symbol if payment_token_address is provided
-    const { data: paymentTokenSymbol } = useReadContract({
-        address: presale.payment_token_address as `0x${string}` | undefined,
-        abi: erc20Abi,
-        functionName: 'symbol',
-        query: {
-            enabled: !!presale.payment_token_address,
-        }
-    });
-
+export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
     // Convert wei values to ether
-    const raised = parseFloat(formatEther(BigInt(presale.total_raised || '0')));
-    const goal = parseFloat(formatEther(BigInt(presale.hard_cap || '0')));
-    const progress = goal > 0 ? (raised / goal) * 100 : 0;
+    const raised = parseFloat(formatEther(presale.totalRaised || 0n));
+    const goal = parseFloat(formatEther(presale.hardCap || 0n));
+    const progressValue = presale.progress || 0;
 
-    // Parse dates
-    const startTime = new Date(presale.start_time);
-    const endTime = new Date(presale.end_time);
+    // Parse dates from bigint timestamps
+    const startTime = new Date(Number(presale.startTime) * 1000);
+    const endTime = new Date(Number(presale.endTime) * 1000);
 
     // Determine status type
     const statusType = mapStatusToStatusType(presale.status);
 
-    // Use project_name if available, otherwise token_name
-    const displayName = presale.project_name || presale.token_name;
+    // Use sale token name as display name
+    const displayName = presale.saleTokenName || presale.saleTokenSymbol || 'Unknown';
 
-    // Use project_description if available, otherwise create a default description
-    const description = presale.project_description || `Presale for ${presale.token_name}.`;
+    // Create a default description
+    const description = `Presale for ${presale.saleTokenName || presale.saleTokenSymbol}.`;
 
-    // Use token_logo_url if available, otherwise use a placeholder
-    const logo = presale.token_logo_url || `https://placehold.co/60x60/8B5CF6/FFFFFF?text=${(presale.token_symbol || 'TO').slice(0, 2).toUpperCase()}`;
+    // Use a placeholder logo
+    const logo = `https://placehold.co/60x60/8B5CF6/FFFFFF?text=${(presale.saleTokenSymbol || 'TO').slice(0, 2).toUpperCase()}`;
 
     // Use payment token symbol if available, otherwise default to ETH
-    const currency = (paymentTokenSymbol as string) || 'ETH';
+    const currency = presale.paymentTokenSymbol || 'ETH';
 
     const project: Project = {
-        id: presale.id,
+        id: presale.address,
         name: displayName,
         description: description,
         logo: logo,
@@ -96,10 +85,10 @@ export function PresaleCard({ presale }: { presale: LaunchpadPresale }) {
         raised: raised,
         goal: goal,
         currency: currency,
-        progress: progress,
+        progress: progressValue,
         endTime: endTime,
         startTime: startTime,
-        website: presale.project_website || '',
+        website: '',
     }
 
     const getStatusColor = () => {
@@ -112,7 +101,7 @@ export function PresaleCard({ presale }: { presale: LaunchpadPresale }) {
     };
 
     return (
-        <Link to={`/projects/${presale.presale_address}`}>
+        <Link to={`/projects/${presale.address}`}>
             <div className="border-4 border-black p-6 bg-[#FFF9F0] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 group cursor-pointer h-full flex flex-col">
                 {/* Status indicator */}
                 <div className={`absolute top-0 right-0 w-4 h-4 border-2 border-black ${getStatusColor()}`}></div>

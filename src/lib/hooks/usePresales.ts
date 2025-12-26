@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useReadContract } from 'wagmi';
-import { PresaleFactoryContract } from '@/lib/config';
+import { useEffect, useMemo } from 'react';
+import { useReadContract, useReadContracts } from 'wagmi';
+import { PresaleFactoryContract } from '@/config/config';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 import type { Address } from 'viem';
 
@@ -16,14 +16,44 @@ export function usePresales(forceRefetch = false) {
   const isStale = isPresalesStale();
   const shouldFetch = isStale || forceRefetch || !cachedPresales;
 
-  const { data: presales, isLoading, refetch } = useReadContract({
+  // First get total count of presales
+  const { data: totalPresales, isLoading: isLoadingTotal, refetch: refetchTotal } = useReadContract({
     abi: PresaleFactoryContract.abi,
     address: PresaleFactoryContract.address as Address,
-    functionName: 'allPresales',
+    functionName: 'totalPresales',
     query: {
       enabled: shouldFetch,
     },
   });
+
+  // Build queries to fetch all presale addresses
+  const addressQueries = useMemo(() => {
+    if (!totalPresales || totalPresales === 0n) return [];
+    const count = Number(totalPresales);
+    return Array.from({ length: count }, (_, i) => ({
+      abi: PresaleFactoryContract.abi,
+      address: PresaleFactoryContract.address as Address,
+      functionName: 'allPresales' as const,
+      args: [BigInt(i)],
+    }));
+  }, [totalPresales]);
+
+  const { data: addressResults, isLoading: isLoadingAddresses, refetch: refetchAddresses } = useReadContracts({
+    contracts: addressQueries,
+    query: {
+      enabled: addressQueries.length > 0,
+    },
+  });
+
+  // Extract addresses from results
+  const presaleAddresses = useMemo(() => {
+    if (!addressResults) return null;
+    return addressResults
+      .map((r) => r.result as Address | undefined)
+      .filter((addr): addr is Address => !!addr);
+  }, [addressResults]);
+
+  const isLoading = isLoadingTotal || isLoadingAddresses;
 
   useEffect(() => {
     if (shouldFetch && isLoading) {
@@ -32,18 +62,19 @@ export function usePresales(forceRefetch = false) {
   }, [shouldFetch, isLoading, setPresalesLoading]);
 
   useEffect(() => {
-    if (presales && !isLoading) {
-      setPresales(presales as `0x${string}`[]);
+    if (presaleAddresses && !isLoading) {
+      setPresales(presaleAddresses);
     }
-  }, [presales, isLoading, setPresales]);
+  }, [presaleAddresses, isLoading, setPresales]);
 
   const handleRefetch = async () => {
     setPresalesLoading(true);
-    await refetch();
+    await refetchTotal();
+    await refetchAddresses();
   };
 
   return {
-    presales: cachedPresales || (presales as `0x${string}`[]) || [],
+    presales: cachedPresales || presaleAddresses || [],
     isLoading: shouldFetch ? isLoading : false,
     refetch: handleRefetch,
   };

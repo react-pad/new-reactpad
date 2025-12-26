@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { TokenLocker } from "@/lib/config";
+import { TokenLocker } from "@/config/config";
 import { useAllLocks } from "@/lib/hooks/useAllLocks";
 import { formatDistanceToNow } from "date-fns";
 import { useSearchParams } from "react-router-dom";
@@ -15,9 +15,13 @@ import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteCont
 interface Lock {
     id: bigint;
     token: `0x${string}`;
-    amount: bigint;
-    unlockTime: bigint;
     owner: `0x${string}`;
+    amount: bigint;
+    lockDate: bigint;
+    unlockDate: bigint;
+    withdrawn: boolean;
+    name: string;
+    description: string;
     tokenSymbol?: string;
     formattedAmount: string;
 }
@@ -36,8 +40,10 @@ function TokenLocksTable({ locks, onUnlock, unlockingId }: { locks: Lock[], onUn
             </TableHeader>
             <TableBody>
                 {locks.map(lock => {
-                    const unlockDate = new Date(Number(lock.unlockTime) * 1000);
-                    const isUnlocked = unlockDate < new Date();
+                    const unlockTimestamp = Number(lock.unlockDate ?? 0) * 1000;
+                    const unlockDate = new Date(unlockTimestamp);
+                    const isValidDate = !isNaN(unlockDate.getTime());
+                    const isUnlocked = isValidDate && unlockDate < new Date();
                     return (
                         <TableRow key={lock.id.toString()}>
                             <TableCell>
@@ -45,7 +51,7 @@ function TokenLocksTable({ locks, onUnlock, unlockingId }: { locks: Lock[], onUn
                                 <div className="text-sm text-gray-500 font-mono">{lock.token.slice(0, 6)}...{lock.token.slice(-4)}</div>
                             </TableCell>
                             <TableCell>{lock.formattedAmount}</TableCell>
-                            <TableCell>{formatDistanceToNow(unlockDate, { addSuffix: true })}</TableCell>
+                            <TableCell>{isValidDate ? formatDistanceToNow(unlockDate, { addSuffix: true }) : 'Invalid date'}</TableCell>
                             <TableCell>
                                 {isUnlocked ? <span className="text-green-500">Unlocked</span> : <span className="text-yellow-500">Locked</span>}
                             </TableCell>

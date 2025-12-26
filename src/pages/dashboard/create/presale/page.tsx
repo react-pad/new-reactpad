@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { config } from "@/config/wagmi.config";
-import { LaunchpadPresaleContract, OWNER, PresaleFactory } from "@/lib/config";
-import { LaunchpadService } from "@/lib/services/launchpad-service";
+import { LaunchpadPresaleContract, OWNER, PresaleFactory } from "@/config/config";
+// LaunchpadService removed - data is now stored only on blockchain
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -521,60 +521,11 @@ export default function CreatePresalePage() {
         }
     }, [isConfirming]);
 
+    // Database storage removed - presale data is now stored entirely on blockchain
     const savePresaleToDatabase = useCallback(async (presaleAddress: `0x${string}`, txHash: string) => {
-        try {
-            // Fetch token details from blockchain
-            const [tokenNameResult, tokenSymbolResult, tokenDecimalsResult] = await readContracts(config, {
-                contracts: [
-                    {
-                        address: formData.saleToken as `0x${string}`,
-                        abi: erc20Abi,
-                        functionName: "name",
-                    },
-                    {
-                        address: formData.saleToken as `0x${string}`,
-                        abi: erc20Abi,
-                        functionName: "symbol",
-                    },
-                    {
-                        address: formData.saleToken as `0x${string}`,
-                        abi: erc20Abi,
-                        functionName: "decimals",
-                    },
-                ],
-            });
-
-            const tokenName = tokenNameResult.result as string;
-            const tokenSymbol = tokenSymbolResult.result as string;
-            const tokenDecimals = tokenDecimalsResult.result as number;
-
-            // Save to Supabase launchpad_presales table
-            await LaunchpadService.createPresale({
-                presale_address: presaleAddress.toLowerCase(),
-                sale_token_address: formData.saleToken.toLowerCase(),
-                payment_token_address: formData.paymentToken
-                    ? formData.paymentToken.toLowerCase()
-                    : undefined,
-                token_name: tokenName,
-                token_symbol: tokenSymbol,
-                token_decimals: tokenDecimals,
-                rate: (Number(formData.rate) * 100).toString(), // Scale rate by 100
-                soft_cap: parseEther(formData.softCap).toString(),
-                hard_cap: parseEther(formData.hardCap).toString(),
-                min_contribution: parseEther(formData.minContribution).toString(),
-                max_contribution: parseEther(formData.maxContribution).toString(),
-                start_time: new Date(formData.startTime).toISOString(),
-                end_time: new Date(formData.endTime).toISOString(),
-                owner_address: formData.owner.toLowerCase(),
-                creation_tx_hash: txHash,
-            });
-
-            toast.success("Presale saved to database!");
-        } catch (error) {
-            console.error("Error saving presale to database:", error);
-            toast.error("Failed to save presale to database. Please contact support.");
-        }
-    }, [formData]);
+        // No-op: All presale data is now stored on blockchain and fetched via hooks
+        console.log('Presale created at address:', presaleAddress, 'with tx:', txHash);
+    }, []);
 
     useEffect(() => {
         if (isConfirmed && newPresaleAddress && creationHash && !hasProcessedRef.current) {

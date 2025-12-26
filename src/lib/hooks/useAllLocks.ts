@@ -1,18 +1,21 @@
-import { TokenLocker } from '@/lib/config';
+import { TokenLocker } from '@/config/config';
 import { useMemo } from 'react';
-import { erc20Abi, formatUnits } from 'viem';
+import { erc20Abi, formatUnits, type Address } from 'viem';
 import { useReadContracts } from 'wagmi';
 import { useUserLocks } from './useUserLocks';
 
 interface LockResult {
-  token: `0x${string}`;
+  token: Address;
+  owner: Address;
   amount: bigint;
-  unlockTime: bigint;
-  owner: `0x${string}`;
+  lockDate: bigint;
+  unlockDate: bigint;
+  withdrawn: boolean;
+  name: string;
+  description: string;
 }
 
 export function useAllLocks() {
-  // const { address } = useAccount();
   const { lockIds, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks();
 
   const lockQueries = useMemo(() => {

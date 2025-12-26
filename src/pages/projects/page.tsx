@@ -21,10 +21,8 @@ export default function ProjectsPage() {
   const filteredPresales = presales.filter(presale => {
     if (!presale) return false;
     const matchesSearch =
-      presale.token_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      presale.token_symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      presale.project_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      presale.project_description?.toLowerCase().includes(searchQuery.toLowerCase());
+      presale.saleTokenName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      presale.saleTokenSymbol?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
@@ -82,7 +80,7 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPresales.map((presale) => (
-              <PresaleCard presale={presale} key={presale.id} />
+              <PresaleCard presale={presale} key={presale.address} />
             ))}
           </div>
         )}

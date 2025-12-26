@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
-import { TokenLocker } from '@/lib/config';
+import { TokenLocker } from '@/config/config';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 
 export function useUserLocks(forceRefetch = false) {

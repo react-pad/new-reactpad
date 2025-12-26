@@ -10,7 +10,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { AirdropMultisenderContract } from "@/lib/config";
+import { AirdropMultisenderContract } from "@/config/config";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -43,7 +43,7 @@ export default function AirdropPage() {
         searchParams.get("token") ?? ""
     );
     const [recipientsData, setRecipientsData] = useState("");
-    const [sendType, setSendType] = useState<"erc20" | "eth">("erc20");
+    const [sendType, setSendType] = useState<"erc20" | "eth">("eth");
 
     const parsedRecipients = useMemo(() => {
         if (!recipientsData) {
