@@ -1,7 +1,9 @@
-import { BookOpen, GitMerge, Twitter } from "lucide-react";
+import { BookOpen, GitMerge } from "lucide-react";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
 import { Link } from "react-router-dom";
+import { TelegramIcon } from "@/components/ui/icons/telegram-icon";
+import { XIcon } from "@/components/ui/icons/x-icon";
 
 const cardStyles = [
   { bg: 'bg-[#7DF9FF]', text: 'text-black' },
@@ -141,14 +143,14 @@ export default function Home() {
         <div className="container mx-auto px-6 py-8 max-w-7xl flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="font-bold uppercase tracking-wider text-center md:text-left">&copy; {new Date().getFullYear()} ReactPad</p>
           <div className="flex gap-6">
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#7DF9FF] transition-colors">
-              <Twitter size={24} />
+            <a href="https://x.com/reactpad" target="_blank" rel="noopener noreferrer" className="hover:text-[#7DF9FF] transition-colors">
+              <XIcon size={24} />
+            </a>
+            <a href="https://t.me/reactpad" target="_blank" rel="noopener noreferrer" className="hover:text-[#7DF9FF] transition-colors">
+              <TelegramIcon size={24} />
             </a>
             <a href="https://reactpad.gitbook.io/" target="_blank" rel="noopener noreferrer" className="hover:text-[#7DF9FF] transition-colors">
               <BookOpen size={24} />
-            </a>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-[#7DF9FF] transition-colors">
-              <GitMerge size={24} />
             </a>
           </div>
         </div>
