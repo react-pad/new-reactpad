@@ -1,9 +1,9 @@
-import { BookOpen, GitMerge } from "lucide-react";
-import { useCountUp } from "@/lib/hooks/useCountUp";
-import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
-import { Link } from "react-router-dom";
 import { TelegramIcon } from "@/components/ui/icons/telegram-icon";
 import { XIcon } from "@/components/ui/icons/x-icon";
+import { useCountUp } from "@/lib/hooks/useCountUp";
+import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
+import { BookOpen } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const cardStyles = [
   { bg: 'bg-[#7DF9FF]', text: 'text-black' },
