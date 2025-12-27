@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwapForm } from "@/components/ui/swap-form";
 import { useMarkets } from "@/lib/hooks/useMarkets";
@@ -140,14 +140,14 @@ export default function ProjectDetailPage() {
               <p className="font-bold">Status</p>
               <Badge
                 className={`capitalize ${presale.status === "live"
-                    ? "bg-green-500"
-                    : presale.status === "finalized"
-                      ? "bg-blue-500"
-                      : presale.status === "cancelled"
-                        ? "bg-red-500"
-                        : presale.status === "upcoming"
-                          ? "bg-yellow-500"
-                          : "bg-gray-500"
+                  ? "bg-green-500"
+                  : presale.status === "finalized"
+                    ? "bg-blue-500"
+                    : presale.status === "cancelled"
+                      ? "bg-red-500"
+                      : presale.status === "upcoming"
+                        ? "bg-yellow-500"
+                        : "bg-gray-500"
                   }`}
               >
                 {presale.claimEnabled
@@ -212,8 +212,10 @@ export default function ProjectDetailPage() {
     <div className="container mx-auto px-4 py-12 text-black">
       <section className="mb-8 flex items-center gap-4">
         <Avatar className="h-16 w-16">
-          {/* Assuming a logo might be part of presale data in the future */}
-          {/* <AvatarImage src={presale.logo} alt={`${presale.saleTokenName} logo`} /> */}
+          <AvatarImage
+            src={`https://api.dicebear.com/7.x/rings/svg?seed=${presale.saleToken}`}
+            alt={`${presale.saleTokenName} logo`}
+          />
           <AvatarFallback>
             {presale.saleTokenSymbol?.slice(0, 2)}
           </AvatarFallback>

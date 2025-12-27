@@ -70,8 +70,8 @@ export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
     // Create a default description
     const description = `Presale for ${presale.saleTokenName || presale.saleTokenSymbol}.`;
 
-    // Use a placeholder logo
-    const logo = `https://placehold.co/60x60/8B5CF6/FFFFFF?text=${(presale.saleTokenSymbol || 'TO').slice(0, 2).toUpperCase()}`;
+    // Use a deterministic avatar based on the token address
+    const logo = `https://api.dicebear.com/7.x/rings/svg?seed=${presale.saleToken}`;
 
     // Use payment token symbol if available, otherwise default to ETH
     const currency = presale.paymentTokenSymbol || 'ETH';
@@ -112,14 +112,12 @@ export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
                     </span>
                 )}
                 <div className="flex items-center space-x-4 mb-6">
-                    <div className="border-2 border-black rounded-full p-1 bg-white">
-                        <Avatar className="w-14 h-14 border-2 border-black rounded-full">
-                            <AvatarImage src={project.logo} alt={`${project.name} logo`} />
-                            <AvatarFallback className="text-lg font-black uppercase">
-                                {project.name.slice(0, 2)}
-                            </AvatarFallback>
-                        </Avatar>
-                    </div>
+                    <Avatar className="w-14 h-14">
+                        <AvatarImage src={project.logo} alt={`${project.name} logo`} />
+                        <AvatarFallback className="text-lg font-black uppercase">
+                            {project.name.slice(0, 2)}
+                        </AvatarFallback>
+                    </Avatar>
                     <div className="min-w-0">
                         <h3 className="text-2xl font-black uppercase tracking-tight leading-tight break-words">
                             {project.name}
