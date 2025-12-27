@@ -8,7 +8,7 @@ import {
   Rocket,
   WalletMinimal
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { baseSepolia } from "viem/chains";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
@@ -141,17 +141,22 @@ const SidebarContent = () => {
 
 export function Sidebar({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState<string | null>(null);
   const location = useLocation();
 
-  useEffect(() => {
+  // Close sidebar on route change without using setState in effect
+  if (prevPathname !== null && prevPathname !== location.pathname && sidebarOpen) {
     setSidebarOpen(false);
-  }, [location.pathname]);
+  }
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
+  }
 
   return (
     <>
       {/* Mobile sidebar overlay */}
       <div
-        className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-30 lg:hidden transition-opacity ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none text-black"
+        className={`fixed inset-0 bg-gray-900 bg-opacity-50 z-30 lg:hidden transition-opacity ${sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         onClick={() => setSidebarOpen(false)}
         aria-hidden="true"
@@ -159,7 +164,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed top-0 left-0 h-full w-72 bg-white text-black border-r-4 border-black z-40 transform transition-transform ease-in-out duration-300 lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed top-0 left-0 h-full w-72 bg-white text-black border-r-4 border-black z-40 transform transition-transform ease-in-out duration-300 lg:hidden overflow-y-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
       >
         <SidebarContent />
