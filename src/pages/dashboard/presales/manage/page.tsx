@@ -12,7 +12,6 @@ import {
   erc20Abi,
   formatUnits,
   isAddress,
-  parseEther,
   type Address,
 } from "viem";
 import {
@@ -774,4 +773,3 @@ function ManagePresaleView({
     </div>
   );
 }
-

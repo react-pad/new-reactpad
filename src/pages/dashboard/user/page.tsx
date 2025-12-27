@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserTokens } from "@/lib/hooks/useUserTokens";
 import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
 import { Link } from "react-router-dom";
-import { erc20Abi, formatUnits } from "viem";
+import { erc20Abi } from "viem";
 import { useReadContract, useAccount } from "wagmi";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import type { Address } from "viem";
