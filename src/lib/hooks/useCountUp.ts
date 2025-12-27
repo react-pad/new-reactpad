@@ -7,8 +7,8 @@ const easeOutExpo = (t: number): number => {
 export function useCountUp(to: number, duration: number = 2000) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLParagraphElement>(null);
-  const animationFrameId = useRef<number>();
-  const startTime = useRef<number>();
+  const animationFrameId = useRef<number | undefined>(undefined);
+  const startTime = useRef<number | undefined>(undefined);
   const hasAnimated = useRef(false);
 
   const animate = (timestamp: number) => {
