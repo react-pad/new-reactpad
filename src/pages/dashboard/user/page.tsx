@@ -2,10 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserTokens } from "@/lib/hooks/useUserTokens";
+import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
 import { Link } from "react-router-dom";
-import { erc20Abi } from "viem";
+import { erc20Abi, formatUnits } from "viem";
 import { useReadContract, useAccount } from "wagmi";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ExternalLink } from "lucide-react";
+import type { Address } from "viem";
 
 function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
   const { data: symbol, isLoading: isLoadingSymbol } = useReadContract({
@@ -54,9 +56,61 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
 }
 
 
+function PresaleInfo({ presaleAddress }: { presaleAddress: Address }) {
+  const { presales, isLoading } = useLaunchpadPresales('all', false);
+  
+  // Find the presale in the list
+  const presaleData = presales?.find(p => p.address.toLowerCase() === presaleAddress.toLowerCase());
+  
+  if (isLoading || !presaleData) {
+    return (
+      <div className="py-3 animate-pulse">
+        <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+      </div>
+    );
+  }
+
+  const progress = presaleData.hardCap > 0n 
+    ? Math.round(Number((presaleData.totalRaised * 100n) / presaleData.hardCap))
+    : 0;
+
+  return (
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex-1 min-w-0">
+        <h3 className="font-bold text-lg">
+          {presaleData.saleTokenSymbol || 'Token'} Presale
+        </h3>
+        <p className="text-sm text-gray-500 break-all font-mono">{presaleAddress}</p>
+        <p className="text-xs text-gray-400 mt-1">
+          Status: <span className="font-semibold capitalize">{presaleData.status}</span>
+          {presaleData.totalRaised > 0n && presaleData.hardCap > 0n && (
+            <span className="ml-2">
+              • {progress}% funded
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2 flex-shrink-0">
+        <Button variant="outline" size="sm" asChild>
+          <Link to={`/dashboard/presales/manage/${presaleAddress}`}>
+            Manage <ExternalLink className="ml-1 h-3 w-3" />
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function UserDashboardPage() {
   const { address, isConnected } = useAccount();
   const { tokens: createdTokens, isLoading, refetch } = useUserTokens();
+  const { presales, isLoading: isLoadingPresales } = useLaunchpadPresales('all', false);
+
+  // Filter presales owned by the user
+  const myPresales = presales?.filter(
+    (p) => address && p.owner.toLowerCase() === address.toLowerCase()
+  ) || [];
 
   if (!isConnected) {
     return (
@@ -83,10 +137,12 @@ export default function UserDashboardPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
+            onClick={() => {
+              refetch();
+            }}
+            disabled={isLoading || isLoadingPresales}
           >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading || isLoadingPresales ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -95,38 +151,73 @@ export default function UserDashboardPage() {
         </p>
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>My Created Tokens</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-4">
-              <div className="animate-pulse">
-                <div className="h-16 bg-gray-200 rounded mb-3"></div>
-                <div className="h-16 bg-gray-200 rounded mb-3"></div>
-                <div className="h-16 bg-gray-200 rounded"></div>
-              </div>
-              <p className="text-center text-gray-600">Loading your tokens...</p>
-            </div>
-          ) : createdTokens && createdTokens.length > 0 ? (
-            <div className="divide-y divide-gray-200">
-              {(createdTokens as `0x${string}`[]).map((token) => (
-                <div key={token} className="py-4">
-                  <TokenInfo tokenAddress={token} />
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>My Presales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingPresales ? (
+              <div className="space-y-4">
+                <div className="animate-pulse">
+                  <div className="h-16 bg-gray-200 rounded mb-3"></div>
+                  <div className="h-16 bg-gray-200 rounded mb-3"></div>
+                  <div className="h-16 bg-gray-200 rounded"></div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-gray-600 mb-4">You have not created any tokens yet.</p>
-              <Button asChild>
-                <Link to="/dashboard/create/token">Create Your First Token</Link>
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                <p className="text-center text-gray-600">Loading your presales...</p>
+              </div>
+            ) : myPresales.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {myPresales.map((presale) => (
+                  <div key={presale.address} className="py-4">
+                    <PresaleInfo presaleAddress={presale.address} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600 mb-4">You have not created any presales yet.</p>
+                <Button asChild>
+                  <Link to="/dashboard/create/presale">Create Your First Presale</Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>My Created Tokens</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
+                <div className="animate-pulse">
+                  <div className="h-16 bg-gray-200 rounded mb-3"></div>
+                  <div className="h-16 bg-gray-200 rounded mb-3"></div>
+                  <div className="h-16 bg-gray-200 rounded"></div>
+                </div>
+                <p className="text-center text-gray-600">Loading your tokens...</p>
+              </div>
+            ) : createdTokens && createdTokens.length > 0 ? (
+              <div className="divide-y divide-gray-200">
+                {(createdTokens as `0x${string}`[]).map((token) => (
+                  <div key={token} className="py-4">
+                    <TokenInfo tokenAddress={token} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-600 mb-4">You have not created any tokens yet.</p>
+                <Button asChild>
+                  <Link to="/dashboard/create/token">Create Your First Token</Link>
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -1,12 +1,51 @@
-import { useEffect, useMemo } from 'react';
-import { useReadContract, useReadContracts } from 'wagmi';
-import { erc20Abi, type Address } from 'viem';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { usePublicClient, useReadContract, useReadContracts } from 'wagmi';
+import { erc20Abi, parseAbiItem, type Abi, type Address, type PublicClient } from 'viem';
 import { PresaleFactoryContract, LaunchpadPresaleContract } from '@/config/config';
 import {
   useLaunchpadPresaleStore,
   type PresaleData,
   type PresaleStatus
 } from '@/lib/store/launchpad-presale-store';
+
+const PRESALE_CREATED_EVENT = parseAbiItem(
+  'event PresaleCreated(address indexed creator, address indexed presale, address indexed saleToken, address paymentToken, bool requiresWhitelist)'
+);
+
+type WhitelistMap = Record<string, boolean>;
+
+async function fetchAllWhitelistFlags(client: PublicClient): Promise<WhitelistMap> {
+  const logs = await client.getLogs({
+    address: PresaleFactoryContract.address as Address,
+    event: PRESALE_CREATED_EVENT,
+    fromBlock: 0n,
+  });
+
+  const map: WhitelistMap = {};
+  for (const log of logs) {
+    const presaleAddr = (log.args?.presale as Address | undefined)?.toLowerCase();
+    if (presaleAddr) {
+      map[presaleAddr] = Boolean(log.args?.requiresWhitelist);
+    }
+  }
+  return map;
+}
+
+async function fetchWhitelistFlag(client: PublicClient, presaleAddress: Address): Promise<boolean> {
+  const logs = await client.getLogs({
+    address: PresaleFactoryContract.address as Address,
+    event: PRESALE_CREATED_EVENT,
+    args: { presale: presaleAddress },
+    fromBlock: 0n,
+  });
+
+  if (logs.length === 0) return false;
+  const latest = logs[logs.length - 1];
+  return Boolean(latest.args?.requiresWhitelist);
+}
+
+const presaleFactoryAbi = PresaleFactoryContract.abi as unknown as Abi;
+const launchpadPresaleAbi = LaunchpadPresaleContract.abi as unknown as Abi;
 
 export type LaunchpadPresaleFilter = 'all' | 'live' | 'upcoming' | 'ended' | 'finalized' | 'cancelled';
 
@@ -27,13 +66,16 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     getPresaleStatus,
   } = useLaunchpadPresaleStore();
 
+  const publicClient = usePublicClient();
+  const [whitelistMap, setWhitelistMap] = useState<WhitelistMap>({});
+
   const cachedAddresses = getPresaleAddresses();
   const isStale = isPresaleAddressesStale();
   const shouldFetchAddresses = isStale || forceRefetch || !cachedAddresses;
 
   // Fetch total number of presales
   const { data: totalPresales, isLoading: isLoadingTotal, refetch: refetchTotal } = useReadContract({
-    abi: PresaleFactoryContract.abi,
+    abi: presaleFactoryAbi,
     address: PresaleFactoryContract.address as Address,
     functionName: 'totalPresales',
     query: {
@@ -46,7 +88,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     if (!totalPresales || totalPresales === 0n) return [];
     const count = Number(totalPresales);
     return Array.from({ length: count }, (_, i) => ({
-      abi: PresaleFactoryContract.abi,
+      abi: presaleFactoryAbi,
       address: PresaleFactoryContract.address as Address,
       functionName: 'allPresales' as const,
       args: [BigInt(i)],
@@ -54,7 +96,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   }, [totalPresales]);
 
   const { data: addressResults, isLoading: isLoadingAddresses, refetch: refetchAddresses } = useReadContracts({
-    contracts: addressQueries,
+    contracts: addressQueries as any,
     query: {
       enabled: addressQueries.length > 0,
     },
@@ -67,6 +109,35 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
       .map((r) => r.result as Address | undefined)
       .filter((addr): addr is Address => !!addr);
   }, [addressResults, cachedAddresses]);
+
+  const unknownWhitelistCount = useMemo(() => {
+    if (!presaleAddresses || presaleAddresses.length === 0) return 0;
+    return presaleAddresses.reduce((count, addr) => {
+      return count + (whitelistMap[addr.toLowerCase()] === undefined ? 1 : 0);
+    }, 0);
+  }, [presaleAddresses, whitelistMap]);
+
+  useEffect(() => {
+    if (!publicClient) return;
+    if (!presaleAddresses || presaleAddresses.length === 0) return;
+    if (unknownWhitelistCount === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const latest = await fetchAllWhitelistFlags(publicClient);
+        if (!cancelled) {
+          setWhitelistMap((prev) => ({ ...prev, ...latest }));
+        }
+      } catch (error) {
+        console.error('Failed to read whitelist flags', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, presaleAddresses, unknownWhitelistCount]);
 
   // Update cache when addresses are fetched
   useEffect(() => {
@@ -101,7 +172,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     if (addressesToFetch.length === 0) return [];
 
     const queries: Array<{
-      abi: typeof LaunchpadPresaleContract.abi;
+      abi: Abi;
       address: Address;
       functionName: string;
     }> = [];
@@ -109,29 +180,29 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     for (const addr of addressesToFetch) {
       // Read all presale state
       queries.push(
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'saleToken' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'paymentToken' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'isPaymentETH' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'startTime' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'endTime' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'rate' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'softCap' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'hardCap' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'minContribution' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'maxContribution' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'totalRaised' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'committedTokens' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'totalTokensDeposited' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'claimEnabled' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'refundsEnabled' },
-        { abi: LaunchpadPresaleContract.abi, address: addr, functionName: 'owner' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'saleToken' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'paymentToken' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'isPaymentETH' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'startTime' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'endTime' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'rate' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'softCap' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'hardCap' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'minContribution' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'maxContribution' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'totalRaised' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'committedTokens' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'totalTokensDeposited' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'claimEnabled' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'refundsEnabled' },
+        { abi: launchpadPresaleAbi, address: addr, functionName: 'owner' },
       );
     }
     return queries;
   }, [addressesToFetch]);
 
   const { data: presaleDataResults, isLoading: isLoadingPresaleData } = useReadContracts({
-    contracts: presaleDataQueries,
+    contracts: presaleDataQueries as any,
     query: {
       enabled: presaleDataQueries.length > 0,
     },
@@ -147,12 +218,14 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     for (let i = 0; i < addressesToFetch.length; i++) {
       const baseIdx = i * FIELDS_PER_PRESALE;
       const addr = addressesToFetch[i];
+      const whitelistKey = addr.toLowerCase();
 
       const presale: PresaleData = {
         address: addr,
         saleToken: presaleDataResults[baseIdx]?.result as Address,
         paymentToken: presaleDataResults[baseIdx + 1]?.result as Address,
         isPaymentETH: presaleDataResults[baseIdx + 2]?.result as boolean,
+        requiresWhitelist: whitelistMap[whitelistKey] ?? false,
         startTime: presaleDataResults[baseIdx + 3]?.result as bigint,
         endTime: presaleDataResults[baseIdx + 4]?.result as bigint,
         rate: presaleDataResults[baseIdx + 5]?.result as bigint,
@@ -172,7 +245,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     }
 
     return parsed;
-  }, [presaleDataResults, addressesToFetch]);
+  }, [presaleDataResults, addressesToFetch, whitelistMap]);
 
   // Get unique token addresses for fetching token info
   const uniqueTokenAddresses = useMemo(() => {
@@ -195,7 +268,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   }, [uniqueTokenAddresses]);
 
   const { data: tokenInfoResults, isLoading: isLoadingTokenInfo } = useReadContracts({
-    contracts: tokenInfoQueries,
+    contracts: tokenInfoQueries as any,
     query: {
       enabled: tokenInfoQueries.length > 0,
     },
@@ -292,33 +365,67 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
     getPresaleStatus,
   } = useLaunchpadPresaleStore();
 
+  const publicClient = usePublicClient();
+  const cachedPresale = presaleAddress ? getPresale(presaleAddress) : null;
+  const [requiresWhitelist, setRequiresWhitelist] = useState<boolean | undefined>(cachedPresale?.requiresWhitelist);
+
   const shouldFetch = presaleAddress && (isPresaleStale(presaleAddress) || forceRefetch);
+
+  useEffect(() => {
+    if (cachedPresale?.requiresWhitelist !== undefined) {
+      setRequiresWhitelist(cachedPresale.requiresWhitelist);
+    }
+  }, [cachedPresale?.requiresWhitelist]);
+
+  useEffect(() => {
+    if (!publicClient || !presaleAddress) return;
+    if (requiresWhitelist !== undefined) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const flag = await fetchWhitelistFlag(publicClient, presaleAddress);
+        if (!cancelled) {
+          setRequiresWhitelist(flag);
+        }
+      } catch (error) {
+        console.error('Failed to fetch whitelist flag', error);
+        if (!cancelled) {
+          setRequiresWhitelist(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicClient, presaleAddress, requiresWhitelist]);
 
   // Fetch presale data
   const presaleDataQueries = useMemo(() => {
     if (!presaleAddress || !shouldFetch) return [];
     return [
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'saleToken' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'paymentToken' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'isPaymentETH' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'startTime' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'endTime' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'rate' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'softCap' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'hardCap' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'minContribution' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'maxContribution' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'totalRaised' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'committedTokens' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'totalTokensDeposited' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'claimEnabled' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'refundsEnabled' as const },
-      { abi: LaunchpadPresaleContract.abi, address: presaleAddress, functionName: 'owner' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'saleToken' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'paymentToken' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'isPaymentETH' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'startTime' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'endTime' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'rate' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'softCap' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'hardCap' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'minContribution' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'maxContribution' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'totalRaised' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'committedTokens' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'totalTokensDeposited' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'claimEnabled' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'refundsEnabled' as const },
+      { abi: launchpadPresaleAbi, address: presaleAddress, functionName: 'owner' as const },
     ];
   }, [presaleAddress, shouldFetch]);
 
   const { data: presaleDataResults, isLoading: isLoadingPresaleData, refetch: refetchPresale } = useReadContracts({
-    contracts: presaleDataQueries,
+    contracts: presaleDataQueries as any,
     query: {
       enabled: presaleDataQueries.length > 0,
     },
@@ -328,7 +435,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
   const presaleData = useMemo((): PresaleData | null => {
     if (!presaleAddress) return null;
     if (!presaleDataResults || presaleDataResults.length === 0) {
-      return getPresale(presaleAddress);
+      return cachedPresale;
     }
 
     return {
@@ -336,6 +443,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
       saleToken: presaleDataResults[0]?.result as Address,
       paymentToken: presaleDataResults[1]?.result as Address,
       isPaymentETH: presaleDataResults[2]?.result as boolean,
+      requiresWhitelist: requiresWhitelist ?? cachedPresale?.requiresWhitelist ?? false,
       startTime: presaleDataResults[3]?.result as bigint,
       endTime: presaleDataResults[4]?.result as bigint,
       rate: presaleDataResults[5]?.result as bigint,
@@ -350,7 +458,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
       refundsEnabled: presaleDataResults[14]?.result as boolean,
       owner: presaleDataResults[15]?.result as Address,
     };
-  }, [presaleAddress, presaleDataResults, getPresale]);
+  }, [presaleAddress, presaleDataResults, cachedPresale, requiresWhitelist]);
 
   // Fetch token info
   const tokenAddresses = useMemo(() => {
@@ -370,7 +478,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
   }, [tokenAddresses]);
 
   const { data: tokenInfoResults, isLoading: isLoadingTokenInfo } = useReadContracts({
-    contracts: tokenInfoQueries,
+    contracts: tokenInfoQueries as any,
     query: {
       enabled: tokenInfoQueries.length > 0,
     },
@@ -422,13 +530,24 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
     };
   }, [presaleData, tokenInfoResults, tokenAddresses, getPresaleStatus]);
 
-  // Update cache
+  // Track last updated address to prevent infinite loops
+  const lastUpdatedAddressRef = useRef<string | null>(null);
+  
+  // Update cache only when loading completes for a new address
+  // Note: We intentionally don't include completePresale in deps to avoid infinite loops
   useEffect(() => {
-    if (completePresale && !isLoadingPresaleData && !isLoadingTokenInfo) {
+    if (isLoadingPresaleData || isLoadingTokenInfo || !completePresale) {
+      return;
+    }
+    
+    const addressKey = completePresale.address.toLowerCase();
+    // Only update if this is a different address than we last updated
+    if (lastUpdatedAddressRef.current !== addressKey) {
       setPresale(completePresale.address, completePresale);
+      lastUpdatedAddressRef.current = addressKey;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completePresale, isLoadingPresaleData, isLoadingTokenInfo]);
+  }, [presaleAddress, isLoadingPresaleData, isLoadingTokenInfo]);
 
   return {
     presale: completePresale,
@@ -456,13 +575,13 @@ export function useUserPresaleContribution(
     if (!presaleAddress || !userAddress || !shouldFetch) return [];
     return [
       {
-        abi: LaunchpadPresaleContract.abi,
+        abi: launchpadPresaleAbi,
         address: presaleAddress,
         functionName: 'contributions' as const,
         args: [userAddress]
       },
       {
-        abi: LaunchpadPresaleContract.abi,
+        abi: launchpadPresaleAbi,
         address: presaleAddress,
         functionName: 'purchasedTokens' as const,
         args: [userAddress]
@@ -471,7 +590,7 @@ export function useUserPresaleContribution(
   }, [presaleAddress, userAddress, shouldFetch]);
 
   const { data: userDataResults, isLoading, refetch } = useReadContracts({
-    contracts: userDataQueries,
+    contracts: userDataQueries as any,
     query: {
       enabled: userDataQueries.length > 0,
     },

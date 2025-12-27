@@ -106,6 +106,11 @@ export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
                 {/* Status indicator */}
                 <div className={`absolute top-0 right-0 w-4 h-4 border-2 border-black ${getStatusColor()}`}></div>
 
+                {presale.requiresWhitelist && (
+                    <span className="inline-block mb-4 border-2 border-black bg-[#FFB3C1] px-3 py-1 text-xs font-black uppercase tracking-wider">
+                        Whitelist Only
+                    </span>
+                )}
                 <div className="flex items-center space-x-4 mb-6">
                     <div className="border-2 border-black rounded-full p-1 bg-white">
                         <Avatar className="w-14 h-14 border-2 border-black rounded-full">

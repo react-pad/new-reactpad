@@ -174,11 +174,29 @@ export default function ProjectDetailPage() {
                 {new Date(Number(presale.endTime) * 1000).toLocaleString()}
               </p>
             </div>
+            {presale.requiresWhitelist && (
+              <div className="col-span-2 border-2 border-black bg-[#FFFB8F] p-3 rounded">
+                <p className="font-bold uppercase text-xs">Participation</p>
+                <p className="text-sm text-gray-700">
+                  This sale is limited to wallets the project owner adds to the whitelist.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      <div>
+      <div className="space-y-4">
+        {presale.requiresWhitelist && (
+          <Card className="border-4 border-black bg-[#FFFB8F]">
+            <CardContent className="p-4">
+              <p className="font-black uppercase text-xs mb-1">Whitelist Required</p>
+              <p className="text-sm text-gray-700">
+                Connect your wallet below to check if you've been approved to join this sale.
+              </p>
+            </CardContent>
+          </Card>
+        )}
         <PresaleParticipationForm presale={presale} />
       </div>
     </div>
@@ -202,6 +220,11 @@ export default function ProjectDetailPage() {
             Created by @{presale.owner.slice(0, 6)}...
             {presale.owner.slice(-4)}
           </p>
+          {presale.requiresWhitelist && (
+            <Badge className="mt-2 bg-[#FFB3C1] text-black border border-black uppercase tracking-wider">
+              Whitelist Only
+            </Badge>
+          )}
         </div>
       </section>
 

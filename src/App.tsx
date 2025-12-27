@@ -5,6 +5,7 @@ import CreateHubPage from "./pages/dashboard/create/page";
 import CreatePresalePage from "./pages/dashboard/create/presale/page";
 import CreateProjectPage from "./pages/dashboard/create/project/page";
 import CreateTokenPage from "./pages/dashboard/create/token/page";
+import ManagePresalePage from "./pages/dashboard/presales/manage/page";
 import AirdropPage from "./pages/dashboard/tools/airdrop/page";
 import TokenLockerPage from "./pages/dashboard/tools/token-locker/page";
 import UserDashboardPage from "./pages/dashboard/user/page";
@@ -31,6 +32,7 @@ function App() {
             <Route path="/dashboard/create/presale" element={<CreatePresalePage />} />
             <Route path="/dashboard/create/project" element={<CreateProjectPage />} />
             <Route path="/dashboard/create/token" element={<CreateTokenPage />} />
+            <Route path="/dashboard/presales/manage/:address" element={<ManagePresalePage />} />
             <Route path="/dashboard/tools/airdrop" element={<AirdropPage />} />
             <Route path="/dashboard/tools/token-locker" element={<TokenLockerPage />} />
             <Route path="/dashboard/user" element={<UserDashboardPage />} />

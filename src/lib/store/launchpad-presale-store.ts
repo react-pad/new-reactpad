@@ -9,6 +9,7 @@ export interface PresaleData {
   saleToken: Address;
   paymentToken: Address;
   isPaymentETH: boolean;
+  requiresWhitelist?: boolean;
   startTime: bigint;
   endTime: bigint;
   rate: bigint;

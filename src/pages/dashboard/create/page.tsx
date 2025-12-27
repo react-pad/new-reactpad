@@ -1,4 +1,4 @@
-import { ArrowRight, Box, CircleDollarSign, Factory, ImageIcon, Lock, Send } from "lucide-react";
+import { ArrowRight, Box, CircleDollarSign, Factory, ImageIcon, Lock, Send, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const creationOptions = [
@@ -40,6 +40,12 @@ const toolOptions = [
     title: "Airdrop Tokens",
     description: "Airdrop tokens to multiple addresses at once.",
     icon: Send,
+  },
+  {
+    to: "/dashboard/user",
+    title: "Manage Presales",
+    description: "View and manage your presales.",
+    icon: Settings,
   },
 ];
 

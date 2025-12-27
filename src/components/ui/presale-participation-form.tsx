@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { formatUnits, parseUnits } from "viem";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LaunchpadPresaleContract } from "@/config/config";
 import { usePresaleContribute } from "@/lib/hooks/usePresaleActions";
 import {
   useLaunchpadPresale,
@@ -26,6 +27,10 @@ export function PresaleParticipationForm({
 
   const { presale: updatedPresale } = useLaunchpadPresale(presale.address, true);
   const presaleData = updatedPresale || presale;
+  const publicClient = usePublicClient();
+  const [isWhitelisted, setIsWhitelisted] = useState(!presaleData.requiresWhitelist);
+  const [isCheckingWhitelist, setIsCheckingWhitelist] = useState(false);
+  const [whitelistError, setWhitelistError] = useState<string | null>(null);
 
   const {
     contribution: userContribution,
@@ -68,6 +73,50 @@ export function PresaleParticipationForm({
   };
 
   useEffect(() => {
+    if (!presaleData.requiresWhitelist) {
+      setIsWhitelisted(true);
+      setWhitelistError(null);
+      return;
+    }
+    if (!account || !publicClient) {
+      setIsWhitelisted(false);
+      setWhitelistError(account ? null : "Connect your wallet to verify access.");
+      return;
+    }
+    let cancelled = false;
+    setIsCheckingWhitelist(true);
+    setWhitelistError(null);
+
+    (async () => {
+      try {
+        const allowed = await publicClient.readContract({
+          abi: LaunchpadPresaleContract.abi,
+          address: presaleData.address,
+          functionName: "whitelist",
+          args: [account],
+        });
+        if (!cancelled) {
+          setIsWhitelisted(Boolean(allowed));
+        }
+      } catch (error) {
+        console.error("Whitelist check failed", error);
+        if (!cancelled) {
+          setIsWhitelisted(false);
+          setWhitelistError("Unable to verify whitelist status right now.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsCheckingWhitelist(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [presaleData.requiresWhitelist, presaleData.address, account, publicClient]);
+
+  useEffect(() => {
     if (isSuccess) {
       refetchContribution();
       setAmount("");
@@ -79,12 +128,22 @@ export function PresaleParticipationForm({
   const currentContribution = BigInt(userContribution);
   const remainingContribution = maxContribution - currentContribution;
 
+  const whitelistGateOpen =
+    !presaleData.requiresWhitelist || (account && isWhitelisted);
+
   const canContribute =
     amountAsBigInt > 0 &&
     amountAsBigInt >= minContribution &&
-    amountAsBigInt <= remainingContribution;
+    amountAsBigInt <= remainingContribution &&
+    whitelistGateOpen;
 
   const getButtonText = () => {
+    if (presaleData.requiresWhitelist && !whitelistGateOpen) {
+      if (!account) return "Connect wallet";
+      if (isCheckingWhitelist) return "Checking access...";
+      if (whitelistError) return "Retry whitelist check";
+      return "Not whitelisted";
+    }
     if (isApproving) return "Approving...";
     if (isPending) return "Confirming...";
     if (isConfirming) return "Waiting for transaction...";
@@ -95,8 +154,22 @@ export function PresaleParticipationForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-lg bg-white p-6 shadow-md"
+      className="space-y-4 border-4 border-black bg-[#FFF9F0] p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]"
     >
+      {presaleData.requiresWhitelist && (
+        <div className="border-2 border-black bg-[#FFFB8F] p-3 text-sm font-semibold uppercase tracking-wide">
+          {!account
+            ? "Connect your wallet to check whitelist status."
+            : isCheckingWhitelist
+              ? "Checking whitelist status..."
+              : isWhitelisted
+                ? "You're approved to participate."
+                : "You are not on the whitelist yet."}
+        </div>
+      )}
+      {whitelistError && (
+        <p className="text-xs text-red-600">{whitelistError}</p>
+      )}
       <div>
         <label htmlFor="amount" className="mb-1 block font-medium">
           Amount to Contribute ({presaleData.paymentTokenSymbol})
@@ -128,7 +201,11 @@ export function PresaleParticipationForm({
         type={needsApproval ? "button" : "submit"}
         onClick={needsApproval ? approve : undefined}
         disabled={
-          isPending || isConfirming || isApproving || (needsApproval ? false : !canContribute)
+          isPending ||
+          isConfirming ||
+          isApproving ||
+          !whitelistGateOpen ||
+          (needsApproval ? false : !canContribute)
         }
         className="w-full"
       >
