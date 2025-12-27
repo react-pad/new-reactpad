@@ -9,20 +9,28 @@ import { useBlockchainStore } from "@/lib/store/blockchain-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { decodeEventLog, parseEther, type Abi, type Address } from "viem";
+import {
+  decodeEventLog,
+  parseEther,
+  parseUnits,
+  type Abi,
+  type Address,
+} from "viem";
 import {
   useAccount,
+  useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
+import { erc20Abi } from "@/config/config";
 
 interface PresaleFormData {
   saleToken: string;
   paymentToken: string;
   startTime: string;
   endTime: string;
-  rate: string;
+  saleAmount: string; // Total tokens to sell (replaces rate)
   softCap: string;
   hardCap: string;
   minContribution: string;
@@ -52,7 +60,7 @@ function CreatePresaleForm({
     paymentToken,
     startTime,
     endTime,
-    rate,
+    saleAmount,
     softCap,
     hardCap,
     minContribution,
@@ -60,6 +68,18 @@ function CreatePresaleForm({
     owner,
     requiresWhitelist,
   } = formData;
+
+  // Fetch sale token decimals
+  const { data: saleTokenDecimals } = useReadContract({
+    address: saleToken as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "decimals",
+    query: {
+      enabled: Boolean(saleToken && saleToken.startsWith("0x")),
+    },
+  });
+
+  const decimals = (saleTokenDecimals as number) || 18;
 
   useEffect(() => {
     if (address && !owner) {
@@ -150,12 +170,42 @@ function CreatePresaleForm({
     }
     setIsChecking(false);
 
+    // Validate required fields
+    if (!saleAmount || !hardCap) {
+      toast.error(
+        "Sale Amount and Hard Cap are required to calculate the rate."
+      );
+      return;
+    }
+
+    // Calculate rate from saleAmount and hardCap
+    // rate = (saleAmount * 100) / hardCap
+    // This gives tokens per payment unit, scaled by 100 (as contract expects)
+    const saleAmountWei = parseUnits(saleAmount, decimals);
+    const hardCapWei = parseEther(hardCap);
+
+    if (hardCapWei === 0n) {
+      toast.error("Hard Cap must be greater than 0.");
+      return;
+    }
+
+    // Calculate rate: (saleAmount * 100) / hardCap
+    // The 100 is the RATE_DIVISOR from the contract
+    const calculatedRate = (saleAmountWei * 100n) / hardCapWei;
+
+    if (calculatedRate === 0n) {
+      toast.error(
+        "Calculated rate is 0. Please check your Sale Amount and Hard Cap values."
+      );
+      return;
+    }
+
     const presaleConfig = {
       startTime: BigInt(new Date(startTime).getTime() / 1000),
       endTime: BigInt(new Date(endTime).getTime() / 1000),
-      rate: BigInt(Math.round(Number(rate) * 100)), // scale rate by 100
+      rate: calculatedRate,
       softCap: parseEther(softCap),
-      hardCap: parseEther(hardCap),
+      hardCap: hardCapWei,
       minContribution: parseEther(minContribution),
       maxContribution: parseEther(maxContribution),
     };
@@ -252,14 +302,30 @@ function CreatePresaleForm({
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="rate">Rate</Label>
+        <Label htmlFor="saleAmount">Total Tokens for Sale</Label>
         <Input
-          id="rate"
+          id="saleAmount"
           type="number"
-          placeholder="e.g. 1000 (tokens per ETH/payment token)"
-          value={rate}
+          placeholder="e.g. 1000000 (total tokens to sell)"
+          value={saleAmount}
           onChange={handleChange}
         />
+        <p className="text-xs text-gray-500">
+          Total number of tokens you want to sell. The rate will be
+          automatically calculated based on your Hard Cap.
+        </p>
+        {saleAmount &&
+          hardCap &&
+          Number(saleAmount) > 0 &&
+          Number(hardCap) > 0 && (
+            <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+              <p className="font-semibold">Calculated Rate:</p>
+              <p>
+                {(Number(saleAmount) / Number(hardCap)).toFixed(2)} tokens per{" "}
+                {paymentToken ? "payment token" : "ETH"}
+              </p>
+            </div>
+          )}
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -369,7 +435,7 @@ export default function CreatePresalePage() {
     paymentToken: "",
     startTime: "",
     endTime: "",
-    rate: "",
+    saleAmount: "",
     softCap: "",
     hardCap: "",
     minContribution: "",

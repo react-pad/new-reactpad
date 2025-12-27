@@ -32,6 +32,9 @@ export default function ProjectDetailPage() {
 
   const presaleIsActive =
     presale.status === "live" || presale.status === "upcoming";
+  const isPresaleFinalized = presale.claimEnabled === true;
+  const isPresaleCancelled = presale.refundsEnabled === true;
+  const showPresaleView = presaleIsActive || isPresaleFinalized || isPresaleCancelled;
 
   const renderMarketView = () => {
     const presaleTokens = [
@@ -139,16 +142,26 @@ export default function ProjectDetailPage() {
                 className={`capitalize ${
                   presale.status === "live"
                     ? "bg-green-500"
+                    : presale.status === "finalized"
+                    ? "bg-blue-500"
+                    : presale.status === "cancelled"
+                    ? "bg-red-500"
+                    : presale.status === "upcoming"
+                    ? "bg-yellow-500"
                     : "bg-gray-500"
                 }`}
               >
-                {presale.status}
+                {presale.claimEnabled
+                  ? "Finalized - Claim Open"
+                  : presale.refundsEnabled
+                  ? "Cancelled - Refunds Open"
+                  : presale.status}
               </Badge>
             </div>
             <div>
               <p className="font-bold">Rate</p>
               <p>
-                1 {presale.paymentTokenSymbol} = {presale.rate.toString()}{" "}
+                1 {presale.paymentTokenSymbol} = {Number(presale.rate) / 100}{" "}
                 {presale.saleTokenSymbol}
               </p>
             </div>
@@ -160,12 +173,6 @@ export default function ProjectDetailPage() {
                   presale.paymentTokenDecimals || 18
                 )}{" "}
                 {presale.paymentTokenSymbol}
-              </p>
-            </div>
-            <div>
-              <p className="font-bold">Sale Starts</p>
-              <p>
-                {new Date(Number(presale.startTime) * 1000).toLocaleString()}
               </p>
             </div>
             <div>
@@ -228,7 +235,7 @@ export default function ProjectDetailPage() {
         </div>
       </section>
 
-      {presaleIsActive ? renderPresaleView(presale) : renderMarketView()}
+      {showPresaleView ? renderPresaleView(presale) : renderMarketView()}
     </div>
   );
 }

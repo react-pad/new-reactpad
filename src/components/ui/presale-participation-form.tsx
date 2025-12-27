@@ -3,11 +3,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LaunchpadPresaleContract } from "@/config/config";
-import { usePresaleContribute } from "@/lib/hooks/usePresaleActions";
+import {
+  usePresaleContribute,
+  usePresaleClaimTokens,
+  usePresaleClaimRefund,
+  usePresaleCalculation,
+} from "@/lib/hooks/usePresaleActions";
 import {
   useLaunchpadPresale,
   useUserPresaleContribution,
@@ -25,22 +31,45 @@ export function PresaleParticipationForm({
   const [amount, setAmount] = useState("");
   const { address: account } = useAccount();
 
-  const { presale: updatedPresale } = useLaunchpadPresale(presale.address, true);
+  const { presale: updatedPresale, refetch: refetchPresale } =
+    useLaunchpadPresale(presale.address, true);
   const presaleData = updatedPresale || presale;
   const publicClient = usePublicClient();
-  const [isWhitelisted, setIsWhitelisted] = useState(!presaleData.requiresWhitelist);
+  const [isWhitelisted, setIsWhitelisted] = useState(
+    !presaleData.requiresWhitelist
+  );
   const [isCheckingWhitelist, setIsCheckingWhitelist] = useState(false);
   const [whitelistError, setWhitelistError] = useState<string | null>(null);
 
   const {
     contribution: userContribution,
+    purchasedTokens: userPurchasedTokens,
     refetch: refetchContribution,
   } = useUserPresaleContribution(presaleData.address, account);
 
   const { contribute, isPending, isConfirming, isSuccess, error } =
     usePresaleContribute();
 
+  const {
+    claimTokens,
+    isPending: isClaimTokensPending,
+    isConfirming: isClaimTokensConfirming,
+    isSuccess: isClaimTokensSuccess,
+    error: claimTokensError,
+  } = usePresaleClaimTokens();
+
+  const {
+    claimRefund,
+    isPending: isClaimRefundPending,
+    isConfirming: isClaimRefundConfirming,
+    isSuccess: isClaimRefundSuccess,
+    error: claimRefundError,
+  } = usePresaleClaimRefund();
+
+  const { calculateTokenAmount } = usePresaleCalculation();
+
   const paymentTokenDecimals = presaleData.paymentTokenDecimals || 18;
+  const saleTokenDecimals = presaleData.saleTokenDecimals || 18;
 
   const amountAsBigInt = useMemo(() => {
     try {
@@ -49,6 +78,12 @@ export function PresaleParticipationForm({
       return 0n;
     }
   }, [amount, paymentTokenDecimals]);
+
+  // Calculate expected tokens for the input amount
+  const expectedTokens = useMemo(() => {
+    if (amountAsBigInt === 0n || !presaleData.rate) return 0n;
+    return calculateTokenAmount(amountAsBigInt, presaleData.rate);
+  }, [amountAsBigInt, presaleData.rate, calculateTokenAmount]);
 
   const { needsApproval, approve, isApproving } = usePresaleApproval({
     presaleAddress: presaleData.address,
@@ -80,7 +115,9 @@ export function PresaleParticipationForm({
     }
     if (!account || !publicClient) {
       setIsWhitelisted(false);
-      setWhitelistError(account ? null : "Connect your wallet to verify access.");
+      setWhitelistError(
+        account ? null : "Connect your wallet to verify access."
+      );
       return;
     }
     let cancelled = false;
@@ -114,30 +151,139 @@ export function PresaleParticipationForm({
     return () => {
       cancelled = true;
     };
-  }, [presaleData.requiresWhitelist, presaleData.address, account, publicClient]);
+  }, [
+    presaleData.requiresWhitelist,
+    presaleData.address,
+    account,
+    publicClient,
+  ]);
 
   useEffect(() => {
     if (isSuccess) {
       refetchContribution();
+      refetchPresale();
       setAmount("");
+      toast.success("Contribution successful!");
     }
-  }, [isSuccess, refetchContribution]);
+  }, [isSuccess, refetchContribution, refetchPresale]);
+
+  // Handle claim tokens success
+  useEffect(() => {
+    if (isClaimTokensSuccess) {
+      refetchContribution();
+      refetchPresale();
+      toast.success("Tokens claimed successfully! 🎉");
+    }
+  }, [isClaimTokensSuccess, refetchContribution, refetchPresale]);
+
+  // Handle claim refund success
+  useEffect(() => {
+    if (isClaimRefundSuccess) {
+      refetchContribution();
+      refetchPresale();
+      toast.success("Refund claimed successfully!");
+    }
+  }, [isClaimRefundSuccess, refetchContribution, refetchPresale]);
+
+  // Handle errors
+  useEffect(() => {
+    if (claimTokensError) {
+      toast.error(claimTokensError.message);
+    }
+  }, [claimTokensError]);
+
+  useEffect(() => {
+    if (claimRefundError) {
+      toast.error(claimRefundError.message);
+    }
+  }, [claimRefundError]);
 
   const minContribution = BigInt(presaleData.minContribution);
   const maxContribution = BigInt(presaleData.maxContribution);
   const currentContribution = BigInt(userContribution);
-  const remainingContribution = maxContribution - currentContribution;
+  const currentPurchasedTokens = BigInt(userPurchasedTokens);
 
   const whitelistGateOpen =
     !presaleData.requiresWhitelist || (account && isWhitelisted);
 
+  // Check if presale is currently live (between start and end time)
+  const isPresaleLive = presaleData.status === "live";
+  const isPresaleUpcoming = presaleData.status === "upcoming";
+
+  // Determine presale state
+  const isPresaleFinalized = presaleData.claimEnabled === true;
+  const isPresaleCancelled = presaleData.refundsEnabled === true;
+
+  // Check if presale has ended (based on endTime)
+  const presaleHasEnded = presaleData.endTime
+    ? Date.now() > Number(presaleData.endTime) * 1000
+    : false;
+
+  // Countdown until claim time (presale end)
+  const [claimCountdown, setClaimCountdown] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!presaleData.endTime) {
+      setClaimCountdown(null);
+      return;
+    }
+
+    const endMs = Number(presaleData.endTime) * 1000;
+
+    const format = (ms: number) => {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      const hh = hours.toString().padStart(2, "0");
+      const mm = minutes.toString().padStart(2, "0");
+      const ss = seconds.toString().padStart(2, "0");
+      return days > 0 ? `${days}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
+    };
+
+    const update = () => {
+      const remaining = endMs - Date.now();
+      setClaimCountdown(format(remaining));
+    };
+
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [presaleData.endTime]);
+
+
   const canContribute =
     amountAsBigInt > 0 &&
     amountAsBigInt >= minContribution &&
-    amountAsBigInt <= remainingContribution &&
-    whitelistGateOpen;
+    (maxContribution === 0n || amountAsBigInt <= maxContribution) &&
+    whitelistGateOpen &&
+    isPresaleLive &&
+    !isPresaleFinalized &&
+    !isPresaleCancelled;
+
+  const canClaimTokens = isPresaleFinalized && currentPurchasedTokens > 0n;
+  const canClaimRefund = isPresaleCancelled && currentContribution > 0n;
+
+  // Check if contribution section should be disabled
+  const isContributionDisabled =
+    isPresaleFinalized || isPresaleCancelled || !isPresaleLive;
+
+  const handleClaimTokens = () => {
+    if (!presaleData.address) return;
+    claimTokens(presaleData.address);
+  };
+
+  const handleClaimRefund = () => {
+    if (!presaleData.address) return;
+    claimRefund(presaleData.address);
+  };
 
   const getButtonText = () => {
+    if (isPresaleFinalized) return "Presale Finalized";
+    if (isPresaleCancelled) return "Presale Cancelled";
+    if (isPresaleUpcoming) return "Presale Not Started Yet";
+    if (presaleHasEnded) return "Presale Ended";
     if (presaleData.requiresWhitelist && !whitelistGateOpen) {
       if (!account) return "Connect wallet";
       if (isCheckingWhitelist) return "Checking access...";
@@ -151,25 +297,170 @@ export function PresaleParticipationForm({
     return "Contribute";
   };
 
+  // Render claim section component
+  const renderClaimSection = () => {
+    // Only show if user has tokens or contribution
+    if (currentPurchasedTokens === 0n && currentContribution === 0n) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-3 border-t-2 border-gray-300 pt-4 mt-4">
+        {/* Status Banner */}
+        <div
+          className={`p-3 text-center font-black uppercase tracking-wide text-sm ${
+            isPresaleFinalized
+              ? "bg-[#C4F1BE] text-green-800"
+              : isPresaleCancelled
+              ? "bg-[#FFD1DC] text-red-800"
+              : presaleHasEnded
+              ? "bg-[#FFFB8F] text-yellow-900"
+              : "bg-[#FFFB8F] text-yellow-900"
+          }`}
+        >
+          {isPresaleFinalized
+            ? "✓ Presale Finalized - Claim Your Tokens"
+            : isPresaleCancelled
+            ? "✗ Presale Cancelled - Claim Your Refund"
+            : presaleHasEnded
+            ? "Presale Ended - Awaiting Finalization"
+            : `Claims start in ${claimCountdown ?? "..."}`}
+        </div>
+
+        {/* User's Position */}
+        <div className="space-y-2 rounded border-2 border-gray-300 bg-white p-3">
+          <h4 className="font-bold uppercase text-xs text-gray-500">
+            Your Position
+          </h4>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500 text-xs">Contributed</p>
+              <p className="font-semibold">
+                {formatUnits(currentContribution, paymentTokenDecimals)}{" "}
+                {presaleData.paymentTokenSymbol}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-xs">Tokens to Receive</p>
+              <p className="font-semibold">
+                {formatUnits(currentPurchasedTokens, saleTokenDecimals)}{" "}
+                {presaleData.saleTokenSymbol}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Claim Tokens Button - Always visible, disabled until finalized */}
+        <Button
+          onClick={handleClaimTokens}
+          disabled={
+            !canClaimTokens ||
+            isClaimTokensPending ||
+            isClaimTokensConfirming ||
+            isPresaleCancelled
+          }
+          className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+            isPresaleCancelled
+              ? "hidden"
+              : canClaimTokens
+              ? "bg-[#7DF9FF] text-black"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          {isClaimTokensPending || isClaimTokensConfirming
+            ? "Claiming..."
+            : isPresaleFinalized && currentPurchasedTokens === 0n
+            ? "✓ Already Claimed"
+            : canClaimTokens
+            ? `Claim ${formatUnits(
+                currentPurchasedTokens,
+                saleTokenDecimals
+              )} ${presaleData.saleTokenSymbol}`
+            : presaleHasEnded
+            ? "Awaiting Finalization..."
+            : "Claim Tokens"}
+        </Button>
+
+        {/* Claim Refund Button - Only visible when cancelled */}
+        {isPresaleCancelled && (
+          <Button
+            onClick={handleClaimRefund}
+            disabled={
+              !canClaimRefund || isClaimRefundPending || isClaimRefundConfirming
+            }
+            className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+              canClaimRefund
+                ? "bg-[#FFD1DC] text-black"
+                : "bg-gray-300 text-gray-500"
+            }`}
+          >
+            {isClaimRefundPending || isClaimRefundConfirming
+              ? "Claiming refund..."
+              : canClaimRefund
+              ? `Claim Refund: ${formatUnits(
+                  currentContribution,
+                  paymentTokenDecimals
+                )} ${presaleData.paymentTokenSymbol}`
+              : currentContribution === 0n
+              ? "No refund available"
+              : "✓ Already Refunded"}
+          </Button>
+        )}
+
+        {!account && (
+          <p className="text-center text-xs text-gray-500">
+            Connect your wallet to claim
+          </p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
       className="space-y-4 border-4 border-black bg-[#FFF9F0] p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]"
     >
+      {/* Whitelist Status */}
       {presaleData.requiresWhitelist && (
         <div className="border-2 border-black bg-[#FFFB8F] p-3 text-sm font-semibold uppercase tracking-wide">
           {!account
             ? "Connect your wallet to check whitelist status."
             : isCheckingWhitelist
-              ? "Checking whitelist status..."
-              : isWhitelisted
-                ? "You're approved to participate."
-                : "You are not on the whitelist yet."}
+            ? "Checking whitelist status..."
+            : isWhitelisted
+            ? "✓ You're approved to participate."
+            : "✗ You are not on the whitelist yet."}
         </div>
       )}
       {whitelistError && (
         <p className="text-xs text-red-600">{whitelistError}</p>
       )}
+
+      {/* Contribution Limits */}
+      <div className="rounded border-2 border-gray-300 bg-white p-3 space-y-1">
+        <h4 className="font-bold uppercase text-xs text-gray-500">
+          Contribution Limits
+        </h4>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <span className="text-gray-500">Min:</span>{" "}
+            <span className="font-semibold">
+              {formatUnits(minContribution, paymentTokenDecimals)}{" "}
+              {presaleData.paymentTokenSymbol}
+            </span>
+          </div>
+          <div>
+            <span className="text-gray-500">Max:</span>{" "}
+            <span className="font-semibold">
+              {formatUnits(maxContribution, paymentTokenDecimals)}{" "}
+              {presaleData.paymentTokenSymbol}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Amount Input */}
       <div>
         <label htmlFor="amount" className="mb-1 block font-medium">
           Amount to Contribute ({presaleData.paymentTokenSymbol})
@@ -184,19 +475,25 @@ export function PresaleParticipationForm({
         />
       </div>
 
-      <div className="text-sm text-gray-600">
-        <p>
-          Your Contribution:{" "}
-          {formatUnits(currentContribution, paymentTokenDecimals)}{" "}
-          {presaleData.paymentTokenSymbol}
-        </p>
-        <p>
-          Max Contribution:{" "}
-          {formatUnits(maxContribution, paymentTokenDecimals)}{" "}
-          {presaleData.paymentTokenSymbol}
-        </p>
-      </div>
+      {/* Expected Tokens */}
+      {expectedTokens > 0n && (
+        <div className="rounded border-2 border-[#7DF9FF] bg-[#E0F7FA] p-3">
+          <p className="text-sm">
+            <span className="text-gray-600">You will receive:</span>{" "}
+            <span className="font-bold text-lg">
+              {formatUnits(expectedTokens, saleTokenDecimals)}{" "}
+              {presaleData.saleTokenSymbol}
+            </span>
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Rate: {Number(presaleData.rate) / 100} {presaleData.saleTokenSymbol}{" "}
+            per {presaleData.paymentTokenSymbol}
+          </p>
+        </div>
+      )}
 
+
+      {/* Contribute Button */}
       <Button
         type={needsApproval ? "button" : "submit"}
         onClick={needsApproval ? approve : undefined}
@@ -204,16 +501,23 @@ export function PresaleParticipationForm({
           isPending ||
           isConfirming ||
           isApproving ||
+          isContributionDisabled ||
           !whitelistGateOpen ||
           (needsApproval ? false : !canContribute)
         }
-        className="w-full"
+        className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+          isContributionDisabled
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-[#7DF9FF] text-black"
+        }`}
       >
         {getButtonText()}
       </Button>
 
-      {isSuccess && <p className="text-green-500">Contribution successful!</p>}
-      {error && <p className="text-red-500">Error: {error.message}</p>}
+      {error && <p className="text-red-500 text-sm">Error: {error.message}</p>}
+
+      {/* Claim Section - Always visible if user has tokens */}
+      {renderClaimSection()}
     </form>
   );
 }
