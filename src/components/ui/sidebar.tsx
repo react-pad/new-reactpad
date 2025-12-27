@@ -42,8 +42,10 @@ const SidebarContent = () => {
           throw new Error('Network response was not ok');
         }
         const data = await response.json();
-        if (data.ethereum && data.ethereum.usd) {
-          setEthPriceUsd(data.ethereum.usd);
+        const price = data?.["reactive-network"]?.usd;
+        console.log("REACT price:", price);
+        if (price !== undefined && price !== null) {
+          setEthPriceUsd(price);
         }
       } catch (error) {
         console.error("Failed to fetch ETH price:", error);
@@ -91,7 +93,9 @@ const SidebarContent = () => {
             </div>
             {ethPriceUsd > 0 && (
               <div className="text-xs font-bold mt-1">
-                ~${valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                ~${valueUsd < 0.01 && valueUsd > 0
+                  ? valueUsd.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                  : valueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             )}
           </div>
