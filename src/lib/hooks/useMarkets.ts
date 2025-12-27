@@ -1,4 +1,4 @@
-import { erc20Abi, FactoryContract, PairContract } from "@/config/config";
+import { erc20Abi, FactoryContract, PairContract } from "@/config";
 import { useMemo } from "react";
 import { useReadContracts } from "wagmi";
 

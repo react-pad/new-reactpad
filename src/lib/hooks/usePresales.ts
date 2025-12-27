@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useReadContract, useReadContracts } from 'wagmi';
-import { PresaleFactoryContract } from '@/config/config';
+import { PresaleFactoryContract } from '@/config';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 import type { Address } from 'viem';
 

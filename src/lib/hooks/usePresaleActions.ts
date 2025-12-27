@@ -1,4 +1,4 @@
-import { LaunchpadPresaleContract } from '@/config/config';
+import { LaunchpadPresaleContract } from '@/config';
 import { useLaunchpadPresaleStore } from '@/lib/store/launchpad-presale-store';
 import { useCallback } from 'react';
 import { type Address } from 'viem';

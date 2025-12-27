@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
-import { RouterContract, Weth9Contract } from "@/config/config";
-import { erc20Abi } from "@/config/config";
+import { RouterContract, Weth9Contract } from "@/config";
+import { erc20Abi } from "@/config";
 import { formatUnits, parseUnits, maxUint256 } from "viem";
 
 export function useSwap({

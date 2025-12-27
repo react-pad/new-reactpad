@@ -9,7 +9,7 @@ import {
   useLaunchpadPresale,
   type PresaleWithStatus,
 } from "@/lib/hooks/useLaunchpadPresales";
-import { Weth9Contract } from "@/config/config";
+import { Weth9Contract } from "@/config";
 import { PresaleParticipationForm } from "@/components/ui/presale-participation-form";
 import { formatUnits } from "viem";
 import { Badge } from "@/components/ui/badge";
@@ -139,23 +139,22 @@ export default function ProjectDetailPage() {
             <div>
               <p className="font-bold">Status</p>
               <Badge
-                className={`capitalize ${
-                  presale.status === "live"
+                className={`capitalize ${presale.status === "live"
                     ? "bg-green-500"
                     : presale.status === "finalized"
-                    ? "bg-blue-500"
-                    : presale.status === "cancelled"
-                    ? "bg-red-500"
-                    : presale.status === "upcoming"
-                    ? "bg-yellow-500"
-                    : "bg-gray-500"
-                }`}
+                      ? "bg-blue-500"
+                      : presale.status === "cancelled"
+                        ? "bg-red-500"
+                        : presale.status === "upcoming"
+                          ? "bg-yellow-500"
+                          : "bg-gray-500"
+                  }`}
               >
                 {presale.claimEnabled
                   ? "Finalized - Claim Open"
                   : presale.refundsEnabled
-                  ? "Cancelled - Refunds Open"
-                  : presale.status}
+                    ? "Cancelled - Refunds Open"
+                    : presale.status}
               </Badge>
             </div>
             <div>

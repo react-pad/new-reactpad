@@ -1,5 +1,5 @@
 import { useReadContracts } from "wagmi";
-import { LaunchpadNFTContract } from "@/config/config";
+import { LaunchpadNFTContract } from "@/config";
 import { formatEther } from "viem";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

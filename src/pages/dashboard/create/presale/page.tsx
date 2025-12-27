@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { config } from "@/config/wagmi.config";
-import { LaunchpadPresaleContract, PresaleFactory } from "@/config/config";
+import { config } from "@/config";
+import { LaunchpadPresaleContract, PresaleFactory } from "@/config";
 // LaunchpadService removed - data is now stored only on blockchain
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -23,7 +23,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
-import { erc20Abi } from "@/config/config";
+import { erc20Abi } from "@/config";
 
 interface PresaleFormData {
   saleToken: string;
@@ -395,9 +395,8 @@ function CreatePresaleForm({
           <button
             type="button"
             onClick={handleToggleWhitelist}
-            className={`border-4 border-black px-4 py-2 font-black uppercase tracking-wide shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-              requiresWhitelist ? "bg-[#FFB3C1]" : "bg-white"
-            }`}
+            className={`border-4 border-black px-4 py-2 font-black uppercase tracking-wide shadow-[3px_3px_0_rgba(0,0,0,1)] ${requiresWhitelist ? "bg-[#FFB3C1]" : "bg-white"
+              }`}
           >
             {requiresWhitelist ? "Enabled" : "Disabled"}
           </button>
@@ -415,8 +414,8 @@ function CreatePresaleForm({
         {isChecking
           ? "Checking for existing presale..."
           : isPending
-          ? "Creating Presale..."
-          : "Create Presale"}
+            ? "Creating Presale..."
+            : "Create Presale"}
       </Button>
     </>
   );

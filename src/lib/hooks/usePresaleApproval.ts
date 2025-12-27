@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
-import { erc20Abi } from "@/config/config";
+import { erc20Abi } from "@/config";
 import { type Address, maxUint256 } from "viem";
 
 export function usePresaleApproval({

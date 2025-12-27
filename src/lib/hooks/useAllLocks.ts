@@ -1,4 +1,4 @@
-import { TokenLocker } from '@/config/config';
+import { TokenLocker } from '@/config';
 import { useMemo } from 'react';
 import { erc20Abi, formatUnits, type Address } from 'viem';
 import { useReadContracts } from 'wagmi';

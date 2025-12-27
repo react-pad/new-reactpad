@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useReadContracts } from 'wagmi';
-import { FactoryContract, PairContract, erc20Abi } from '@/config/config';
+import { FactoryContract, PairContract, erc20Abi } from '@/config';
 import { useBlockchainStore, type Market } from '@/lib/store/blockchain-store';
 
 export function useCachedMarkets(forceRefetch = false) {

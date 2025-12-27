@@ -1,7 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { NFTCard } from "@/components/ui/nft-card";
-import { NFTFactoryContract } from "@/config/config";
+import { NFTFactoryContract } from "@/config";
 import { Search } from "lucide-react";
 import { useState } from "react";
 import { useReadContract } from "wagmi";

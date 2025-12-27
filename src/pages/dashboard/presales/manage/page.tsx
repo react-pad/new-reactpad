@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LaunchpadPresaleContract } from "@/config/config";
+import { LaunchpadPresaleContract } from "@/config";
 import { useLaunchpadPresale, type PresaleWithStatus } from "@/lib/hooks/useLaunchpadPresales";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -563,34 +563,32 @@ function ManagePresaleView({
           <Button
             onClick={handleApproveTokens}
             disabled={approveBusy || totalRequiredAmount === 0n || hasSufficientAllowance || hasDeposited}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-              hasSufficientAllowance || hasDeposited
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${hasSufficientAllowance || hasDeposited
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-white text-black"
-            }`}
+              }`}
           >
             {approveBusy
               ? "Approving..."
               : hasSufficientAllowance || hasDeposited
-              ? "✓ Approved"
-              : `Approve ${formatTokenDisplay(totalRequiredAmount)} ${saleTokenSymbol}`}
+                ? "✓ Approved"
+                : `Approve ${formatTokenDisplay(totalRequiredAmount)} ${saleTokenSymbol}`}
           </Button>
           <Button
             onClick={handleDepositTokens}
             disabled={depositBusy || saleAmount === 0n || !hasSufficientAllowance || hasDeposited}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-              hasDeposited
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${hasDeposited
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : hasSufficientAllowance
-                ? "bg-[#7DF9FF] text-black ring-4 ring-yellow-400 ring-opacity-75"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+                  ? "bg-[#7DF9FF] text-black ring-4 ring-yellow-400 ring-opacity-75"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
           >
             {depositBusy
               ? "Depositing..."
               : hasDeposited
-              ? "✓ Deposited"
-              : "Deposit & Cover Fee"}
+                ? "✓ Deposited"
+                : "Deposit & Cover Fee"}
           </Button>
         </div>
         {(hasSufficientAllowance || hasDeposited) && (
@@ -738,11 +736,10 @@ function ManagePresaleView({
           <Button
             onClick={handleWithdrawProceeds}
             disabled={ownerActionBusy || !presale.claimEnabled}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-              !presale.claimEnabled
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${!presale.claimEnabled
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#C4F1BE] text-black"
-            }`}
+              }`}
           >
             {ownerActionBusy && activeOwnerAction === "withdrawProceeds"
               ? "Withdrawing..."
@@ -751,11 +748,10 @@ function ManagePresaleView({
           <Button
             onClick={handleWithdrawTokens}
             disabled={ownerActionBusy || !presale.claimEnabled}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-              !presale.claimEnabled
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${!presale.claimEnabled
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#FFFB8F] text-black"
-            }`}
+              }`}
           >
             {ownerActionBusy && activeOwnerAction === "withdrawTokens"
               ? "Withdrawing..."

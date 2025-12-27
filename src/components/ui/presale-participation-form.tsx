@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LaunchpadPresaleContract } from "@/config/config";
+import { LaunchpadPresaleContract } from "@/config";
 import {
   usePresaleContribute,
   usePresaleClaimTokens,
@@ -308,23 +308,22 @@ export function PresaleParticipationForm({
       <div className="space-y-3 border-t-2 border-gray-300 pt-4 mt-4">
         {/* Status Banner */}
         <div
-          className={`p-3 text-center font-black uppercase tracking-wide text-sm ${
-            isPresaleFinalized
+          className={`p-3 text-center font-black uppercase tracking-wide text-sm ${isPresaleFinalized
               ? "bg-[#C4F1BE] text-green-800"
               : isPresaleCancelled
-              ? "bg-[#FFD1DC] text-red-800"
-              : presaleHasEnded
-              ? "bg-[#FFFB8F] text-yellow-900"
-              : "bg-[#FFFB8F] text-yellow-900"
-          }`}
+                ? "bg-[#FFD1DC] text-red-800"
+                : presaleHasEnded
+                  ? "bg-[#FFFB8F] text-yellow-900"
+                  : "bg-[#FFFB8F] text-yellow-900"
+            }`}
         >
           {isPresaleFinalized
             ? "✓ Presale Finalized - Claim Your Tokens"
             : isPresaleCancelled
-            ? "✗ Presale Cancelled - Claim Your Refund"
-            : presaleHasEnded
-            ? "Presale Ended - Awaiting Finalization"
-            : `Claims start in ${claimCountdown ?? "..."}`}
+              ? "✗ Presale Cancelled - Claim Your Refund"
+              : presaleHasEnded
+                ? "Presale Ended - Awaiting Finalization"
+                : `Claims start in ${claimCountdown ?? "..."}`}
         </div>
 
         {/* User's Position */}
@@ -359,26 +358,25 @@ export function PresaleParticipationForm({
             isClaimTokensConfirming ||
             isPresaleCancelled
           }
-          className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-            isPresaleCancelled
+          className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${isPresaleCancelled
               ? "hidden"
               : canClaimTokens
-              ? "bg-[#7DF9FF] text-black"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          }`}
+                ? "bg-[#7DF9FF] text-black"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
         >
           {isClaimTokensPending || isClaimTokensConfirming
             ? "Claiming..."
             : isPresaleFinalized && currentPurchasedTokens === 0n
-            ? "✓ Already Claimed"
-            : canClaimTokens
-            ? `Claim ${formatUnits(
-                currentPurchasedTokens,
-                saleTokenDecimals
-              )} ${presaleData.saleTokenSymbol}`
-            : presaleHasEnded
-            ? "Awaiting Finalization..."
-            : "Claim Tokens"}
+              ? "✓ Already Claimed"
+              : canClaimTokens
+                ? `Claim ${formatUnits(
+                  currentPurchasedTokens,
+                  saleTokenDecimals
+                )} ${presaleData.saleTokenSymbol}`
+                : presaleHasEnded
+                  ? "Awaiting Finalization..."
+                  : "Claim Tokens"}
         </Button>
 
         {/* Claim Refund Button - Only visible when cancelled */}
@@ -388,22 +386,21 @@ export function PresaleParticipationForm({
             disabled={
               !canClaimRefund || isClaimRefundPending || isClaimRefundConfirming
             }
-            className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-              canClaimRefund
+            className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${canClaimRefund
                 ? "bg-[#FFD1DC] text-black"
                 : "bg-gray-300 text-gray-500"
-            }`}
+              }`}
           >
             {isClaimRefundPending || isClaimRefundConfirming
               ? "Claiming refund..."
               : canClaimRefund
-              ? `Claim Refund: ${formatUnits(
+                ? `Claim Refund: ${formatUnits(
                   currentContribution,
                   paymentTokenDecimals
                 )} ${presaleData.paymentTokenSymbol}`
-              : currentContribution === 0n
-              ? "No refund available"
-              : "✓ Already Refunded"}
+                : currentContribution === 0n
+                  ? "No refund available"
+                  : "✓ Already Refunded"}
           </Button>
         )}
 
@@ -427,10 +424,10 @@ export function PresaleParticipationForm({
           {!account
             ? "Connect your wallet to check whitelist status."
             : isCheckingWhitelist
-            ? "Checking whitelist status..."
-            : isWhitelisted
-            ? "✓ You're approved to participate."
-            : "✗ You are not on the whitelist yet."}
+              ? "Checking whitelist status..."
+              : isWhitelisted
+                ? "✓ You're approved to participate."
+                : "✗ You are not on the whitelist yet."}
         </div>
       )}
       {whitelistError && (
@@ -505,11 +502,10 @@ export function PresaleParticipationForm({
           !whitelistGateOpen ||
           (needsApproval ? false : !canContribute)
         }
-        className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-          isContributionDisabled
+        className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${isContributionDisabled
             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
             : "bg-[#7DF9FF] text-black"
-        }`}
+          }`}
       >
         {getButtonText()}
       </Button>

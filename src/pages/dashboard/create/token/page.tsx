@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TokenFactory, TokenLocker } from "@/config/config";
+import { TokenFactory, TokenLocker } from "@/config";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { decodeEventLog, maxUint256, parseUnits, erc20Abi } from "viem";

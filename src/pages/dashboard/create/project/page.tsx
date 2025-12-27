@@ -3,20 +3,20 @@ import { ArrowLeft } from "lucide-react";
 
 export default function CreateProjectPage() {
   // Tally form ID
-  const TALLY_FORM_ID = "lbq14N";
+  const TALLY_FORM_ID = "J9dvoY";
 
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-6 py-20 max-w-5xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-16">
+        <div className="flex items-center justify-between mb-10">
           <button className="flex items-center gap-3 text-black hover:opacity-70 transition-opacity">
             <ArrowLeft className="w-6 h-6" />
             <span className="font-bold uppercase text-sm tracking-wider">BACK</span>
           </button>
         </div>
 
-        <h1 className="text-6xl md:text-7xl font-black uppercase mb-16 tracking-tight">
+        <h1 className="text-6xl md:text-7xl font-black uppercase mb-6 tracking-tight">
           CREATE<br />PROJECT
         </h1>
 
