@@ -1,4 +1,3 @@
-import { REACT_TOKEN_PRICE_USD } from "@/config/config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
@@ -8,7 +7,7 @@ import {
   Rocket,
   WalletMinimal
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { baseSepolia } from "viem/chains";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
@@ -27,13 +26,37 @@ const SidebarContent = () => {
   const { address, chain } = useAccount();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
+  const [ethPriceUsd, setEthPriceUsd] = useState(0);
 
   const isConnected = !!address;
   const isWrongNetwork = isConnected && chain?.id !== baseSepolia.id;
 
   const { data: balanceData } = useBalance({ address });
   const balance = balanceData ? parseFloat(balanceData.formatted) : 0;
-  const valueUsd = balance * REACT_TOKEN_PRICE_USD;
+
+  useEffect(() => {
+    const fetchEthPrice = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        if (data.ethereum && data.ethereum.usd) {
+          setEthPriceUsd(data.ethereum.usd);
+        }
+      } catch (error) {
+        console.error("Failed to fetch ETH price:", error);
+      }
+    };
+
+    fetchEthPrice();
+    const intervalId = setInterval(fetchEthPrice, 60000); // Refresh every 60 seconds
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const valueUsd = balance * ethPriceUsd;
 
   return (
     <div className="flex flex-col flex-1 h-full">
@@ -61,12 +84,16 @@ const SidebarContent = () => {
           </div>
           <div>
             <div className="text-3xl font-black">
-              {balance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {balance.toLocaleString(undefined, { maximumFractionDigits: 4 })}
             </div>
-            <div className="text-sm font-black uppercase mt-1">REACT</div>
-            <div className="text-xs font-bold mt-1">
-              ~${valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            <div className="text-sm font-black uppercase mt-1">
+              {'REACT'}
             </div>
+            {ethPriceUsd > 0 && (
+              <div className="text-xs font-bold mt-1">
+                ~${valueUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              </div>
+            )}
           </div>
           {isWrongNetwork ? (
             <button
