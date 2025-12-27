@@ -1,6 +1,22 @@
 import { BookOpen, GitMerge, Twitter } from "lucide-react";
+import { useCountUp } from "@/lib/hooks/useCountUp";
+import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
+import { Link } from "react-router-dom";
+
+const cardStyles = [
+  { bg: 'bg-[#7DF9FF]', text: 'text-black' },
+  { bg: 'bg-[#FF4911]', text: 'text-black' },
+  { bg: 'bg-[#3300FF]', text: 'text-white' },
+];
 
 export default function Home() {
+  const { presales: livePresales, allPresales, isLoading: isLoadingPresales } = useLaunchpadPresales('live');
+  const featuredPresales = livePresales.filter(p => p.totalRaised > 0n).slice(-3).reverse();
+
+  const { count: totalProjects, ref: totalProjectsRef } = useCountUp(allPresales.length);
+  const { count: totalRaised, ref: totalRaisedRef } = useCountUp(12.3);
+  const { count: topBackers, ref: topBackersRef } = useCountUp(1234);
+
   return (
     <main className="min-h-screen bg-[#FFF9F0] text-black">
       <div className="container mx-auto px-4 sm:px-6 py-7 max-w-7xl">
@@ -18,16 +34,16 @@ export default function Home() {
               ReactPad
             </div>
           </div>
-          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-none mb-8 tracking-tight">
+          <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-none mb-8 tracking-tight animate-fade-in-up">
             LAUNCH IDEAS.<br />
             MOON PROJECTS.
           </h1>
-          <p className="text-xl sm:text-2xl md:text-3xl mb-12 max-w-3xl mx-auto font-bold px-4">
+          <p className="text-xl sm:text-2xl md:text-3xl mb-12 max-w-3xl mx-auto font-bold px-4 animate-fade-in-up animation-delay-200">
             Discover, back, and launch the most promising projects on the Reactive Network.
           </p>
           <a
             href="/projects"
-            className="inline-block bg-[#7DF9FF] text-black font-black py-4 px-8 sm:py-5 sm:px-12 text-base sm:text-lg border-4 border-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
+            className="inline-block bg-[#7DF9FF] text-black font-black py-4 px-8 sm:py-5 sm:px-12 text-base sm:text-lg border-4 border-black uppercase tracking-wider shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 animate-fade-in-up animation-delay-400"
           >
             EXPLORE PROJECTS →
           </a>
@@ -35,17 +51,17 @@ export default function Home() {
 
         {/* Stats Section */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
-          <div className="bg-[#7DF9FF] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200">
+          <div className="bg-[#7DF9FF] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 animate-fade-in-up animation-delay-200">
             <p className="text-sm font-black tracking-wider mb-4 uppercase">Total Projects</p>
-            <p className="text-6xl font-black">42</p>
+            <p ref={totalProjectsRef} className="text-6xl font-black">{Math.floor(totalProjects).toLocaleString()}</p>
           </div>
-          <div className="bg-[#2FFF2F] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200">
+          <div className="bg-[#2FFF2F] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 animate-fade-in-up animation-delay-400">
             <p className="text-sm font-black tracking-wider mb-4 uppercase">Total Raised</p>
-            <p className="text-6xl font-black">$12.3M</p>
+            <p ref={totalRaisedRef} className="text-6xl font-black">${totalRaised.toFixed(1)}M</p>
           </div>
-          <div className="bg-[#FF00F5] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200">
+          <div className="bg-[#FF00F5] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 animate-fade-in-up animation-delay-600">
             <p className="text-sm font-black tracking-wider mb-4 uppercase">Top Backers</p>
-            <p className="text-6xl font-black">1,234</p>
+            <p ref={topBackersRef} className="text-6xl font-black">{Math.floor(topBackers).toLocaleString()}</p>
           </div>
         </section>
 
@@ -79,21 +95,27 @@ export default function Home() {
             FEATURED LAUNCHES
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-[#7DF9FF] border-4 border-black p-8 cursor-pointer shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200">
-              <h3 className="text-2xl font-black uppercase mb-4">PROJECT ALPHA</h3>
-              <p className="font-bold text-lg mb-6">A revolutionary new DeFi protocol.</p>
-              <span className="text-sm font-black uppercase">LEARN MORE →</span>
-            </div>
-            <div className="bg-[#FF4911] border-4 border-black p-8 cursor-pointer shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200">
-              <h3 className="text-2xl font-black uppercase mb-4">PROJECT BETA</h3>
-              <p className="font-bold text-lg mb-6">The next generation of NFT marketplace.</p>
-              <span className="text-sm font-black uppercase">LEARN MORE →</span>
-            </div>
-            <div className="bg-[#3300FF] border-4 border-black p-8 cursor-pointer shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 text-white">
-              <h3 className="text-2xl font-black uppercase mb-4">PROJECT GAMMA</h3>
-              <p className="font-bold text-lg mb-6">A decentralized social media platform.</p>
-              <span className="text-sm font-black uppercase">LEARN MORE →</span>
-            </div>
+            {isLoadingPresales ? (
+              <div className="text-center md:col-span-2 lg:col-span-3 py-10">Loading projects...</div>
+            ) : featuredPresales.length === 0 ? (
+              <div className="text-center md:col-span-2 lg:col-span-3 py-10">
+                <p className="text-2xl font-bold uppercase mb-2">No Projects to Feature</p>
+                <p className="text-gray-600">Check back soon for the latest launches.</p>
+              </div>
+            ) : (
+              featuredPresales.map((presale, index) => (
+                <Link to={`/projects/${presale.address}`} key={presale.address}>
+                  <div
+                    className={`${cardStyles[index % cardStyles.length].bg
+                      } ${cardStyles[index % cardStyles.length].text
+                      } border-4 border-black p-8 cursor-pointer shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 h-full flex flex-col`}
+                  >
+                    <h3 className="text-2xl font-black uppercase mb-4 flex-grow">{presale.saleTokenName || 'Unnamed Project'}</h3>
+                    <span className="text-sm font-black uppercase">LEARN MORE →</span>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </section>
 
