@@ -4,16 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { LaunchpadPresaleContract } from "@/config";
-import { useLaunchpadPresale, type PresaleWithStatus } from "@/lib/hooks/useLaunchpadPresales";
+import {
+  useLaunchpadPresale,
+  type PresaleWithStatus,
+} from "@/lib/hooks/useLaunchpadPresales";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  erc20Abi,
-  formatUnits,
-  isAddress,
-  type Address,
-} from "viem";
+import { erc20Abi, formatUnits, isAddress, type Address } from "viem";
 import {
   useAccount,
   useReadContract,
@@ -45,10 +43,11 @@ export default function ManagePresalePage() {
     );
   }
 
-  const { presale, isLoading: isLoadingPresale } = useLaunchpadPresale(
-    presaleAddress as Address,
-    false
-  );
+  const {
+    presale,
+    isLoading: isLoadingPresale,
+    refetch: refetchPresale,
+  } = useLaunchpadPresale(presaleAddress as Address, false);
 
   if (isLoadingPresale) {
     return (
@@ -83,7 +82,10 @@ export default function ManagePresalePage() {
   }
 
   // Check if user is the owner
-  if (userAddress && presale.owner.toLowerCase() !== userAddress.toLowerCase()) {
+  if (
+    userAddress &&
+    presale.owner.toLowerCase() !== userAddress.toLowerCase()
+  ) {
     return (
       <div className="container mx-auto px-4 py-12 text-black">
         <Card className="max-w-2xl mx-auto">
@@ -126,16 +128,17 @@ export default function ManagePresalePage() {
 
   return (
     <div className="container mx-auto px-4 py-12 text-black">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center font-bold">
+      <Card className="max-w-2xl mx-auto p-0 gap-0">
+        <CardHeader className="border-b-4 border-black bg-[#FFFB8F] p-6">
+          <CardTitle className="text-3xl text-center font-black uppercase tracking-wider">
             Manage Your Presale
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6">
           <ManagePresaleView
             presaleAddress={presaleAddress as Address}
             presale={presale}
+            refetchPresale={refetchPresale}
           />
         </CardContent>
       </Card>
@@ -146,21 +149,29 @@ export default function ManagePresalePage() {
 function ManagePresaleView({
   presaleAddress,
   presale,
+  refetchPresale,
 }: {
   presaleAddress: Address;
   presale: PresaleWithStatus;
+  refetchPresale: () => void;
 }) {
   const [singleWhitelist, setSingleWhitelist] = useState("");
   const [bulkWhitelist, setBulkWhitelist] = useState("");
   const [removeAddress, setRemoveAddress] = useState("");
-  const [activeOwnerAction, setActiveOwnerAction] = useState<string | null>(null);
-  const [activeWhitelistAction, setActiveWhitelistAction] = useState<string | null>(null);
+  const [activeOwnerAction, setActiveOwnerAction] = useState<string | null>(
+    null
+  );
+  const [activeWhitelistAction, setActiveWhitelistAction] = useState<
+    string | null
+  >(null);
 
   // Safety check - ensure we have required data
   if (!presale.saleToken) {
     return (
       <div className="text-center p-6">
-        <p className="text-red-600">Invalid presale data: missing sale token address</p>
+        <p className="text-red-600">
+          Invalid presale data: missing sale token address
+        </p>
       </div>
     );
   }
@@ -197,7 +208,8 @@ function ManagePresaleView({
     address: presale.saleToken,
     abi: erc20Abi,
     functionName: "allowance",
-    args: userAddress && presaleAddress ? [userAddress, presaleAddress] : undefined,
+    args:
+      userAddress && presaleAddress ? [userAddress, presaleAddress] : undefined,
     query: {
       enabled: Boolean(userAddress && presaleAddress && presale.saleToken),
       refetchInterval: 5000, // Refetch every 5 seconds
@@ -246,10 +258,8 @@ function ManagePresaleView({
     error: approveError,
     reset: resetApprove,
   } = useWriteContract();
-  const {
-    isLoading: isApproveConfirming,
-    isSuccess: isApproveSuccess,
-  } = useWaitForTransactionReceipt({ hash: approveHash });
+  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } =
+    useWaitForTransactionReceipt({ hash: approveHash });
 
   const {
     writeContract: writeDeposit,
@@ -258,10 +268,8 @@ function ManagePresaleView({
     error: depositError,
     reset: resetDeposit,
   } = useWriteContract();
-  const {
-    isLoading: isDepositConfirming,
-    isSuccess: isDepositSuccess,
-  } = useWaitForTransactionReceipt({ hash: depositHash });
+  const { isLoading: isDepositConfirming, isSuccess: isDepositSuccess } =
+    useWaitForTransactionReceipt({ hash: depositHash });
 
   const {
     writeContract: writeOwnerAction,
@@ -282,10 +290,8 @@ function ManagePresaleView({
     error: whitelistError,
     reset: resetWhitelist,
   } = useWriteContract();
-  const {
-    isLoading: isWhitelistConfirming,
-    isSuccess: isWhitelistSuccess,
-  } = useWaitForTransactionReceipt({ hash: whitelistHash });
+  const { isLoading: isWhitelistConfirming, isSuccess: isWhitelistSuccess } =
+    useWaitForTransactionReceipt({ hash: whitelistHash });
 
   useEffect(() => {
     if (approveError) toast.error(approveError.message);
@@ -309,8 +315,9 @@ function ManagePresaleView({
       resetApprove();
       // Refetch allowance after approval
       refetchAllowance();
+      refetchPresale();
     }
-  }, [isApproveSuccess, resetApprove, refetchAllowance]);
+  }, [isApproveSuccess, resetApprove, refetchAllowance, refetchPresale]);
 
   useEffect(() => {
     if (isDepositSuccess) {
@@ -318,8 +325,9 @@ function ManagePresaleView({
       resetDeposit();
       // Refetch balance after deposit
       refetchBalance();
+      refetchPresale();
     }
-  }, [isDepositSuccess, resetDeposit, refetchBalance]);
+  }, [isDepositSuccess, resetDeposit, refetchBalance, refetchPresale]);
 
   useEffect(() => {
     if (isOwnerActionSuccess && activeOwnerAction) {
@@ -332,8 +340,14 @@ function ManagePresaleView({
       toast.success(labels[activeOwnerAction] || "Transaction confirmed");
       setActiveOwnerAction(null);
       resetOwnerAction();
+      refetchPresale();
     }
-  }, [isOwnerActionSuccess, activeOwnerAction, resetOwnerAction]);
+  }, [
+    isOwnerActionSuccess,
+    activeOwnerAction,
+    resetOwnerAction,
+    refetchPresale,
+  ]);
 
   useEffect(() => {
     if (isWhitelistSuccess && activeWhitelistAction) {
@@ -348,8 +362,14 @@ function ManagePresaleView({
       if (activeWhitelistAction === "addOne") setSingleWhitelist("");
       if (activeWhitelistAction === "bulkAdd") setBulkWhitelist("");
       if (activeWhitelistAction === "remove") setRemoveAddress("");
+      refetchPresale();
     }
-  }, [isWhitelistSuccess, activeWhitelistAction, resetWhitelist]);
+  }, [
+    isWhitelistSuccess,
+    activeWhitelistAction,
+    resetWhitelist,
+    refetchPresale,
+  ]);
 
   const handleApproveTokens = () => {
     if (totalRequiredAmount === 0n) {
@@ -420,7 +440,9 @@ function ManagePresaleView({
 
   const handleWithdrawTokens = () => {
     if (!presale.claimEnabled) {
-      toast.error("Please finalize the presale before withdrawing unsold tokens.");
+      toast.error(
+        "Please finalize the presale before withdrawing unsold tokens."
+      );
       return;
     }
     runOwnerAction("withdrawTokens", {
@@ -516,6 +538,9 @@ function ManagePresaleView({
     return contractBalance >= saleAmount;
   }, [contractBalance, saleAmount]);
 
+  // Check if presale has ended (finalized or cancelled)
+  const presaleHasEnded = presale.claimEnabled || presale.refundsEnabled;
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -553,8 +578,8 @@ function ManagePresaleView({
           for contributors.
         </p>
         <p className="text-sm text-gray-700">
-          We automatically add 2% of that sale allocation{" "}
-          (<span className="font-semibold">
+          We automatically add 2% of that sale allocation (
+          <span className="font-semibold">
             {formatTokenDisplay(launchpadFee)} {saleTokenSymbol}
           </span>
           ) as the launchpad fee. Approve and deposit the total below.
@@ -562,33 +587,53 @@ function ManagePresaleView({
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-center">
           <Button
             onClick={handleApproveTokens}
-            disabled={approveBusy || totalRequiredAmount === 0n || hasSufficientAllowance || hasDeposited}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${hasSufficientAllowance || hasDeposited
+            disabled={
+              approveBusy ||
+              totalRequiredAmount === 0n ||
+              hasSufficientAllowance ||
+              hasDeposited ||
+              presaleHasEnded
+            }
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+              hasSufficientAllowance || hasDeposited || presaleHasEnded
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-white text-black"
-              }`}
+            }`}
           >
             {approveBusy
               ? "Approving..."
+              : presaleHasEnded
+              ? "Presale Ended"
               : hasSufficientAllowance || hasDeposited
-                ? "✓ Approved"
-                : `Approve ${formatTokenDisplay(totalRequiredAmount)} ${saleTokenSymbol}`}
+              ? "✓ Approved"
+              : `Approve ${formatTokenDisplay(
+                  totalRequiredAmount
+                )} ${saleTokenSymbol}`}
           </Button>
           <Button
             onClick={handleDepositTokens}
-            disabled={depositBusy || saleAmount === 0n || !hasSufficientAllowance || hasDeposited}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${hasDeposited
+            disabled={
+              depositBusy ||
+              saleAmount === 0n ||
+              !hasSufficientAllowance ||
+              hasDeposited ||
+              presaleHasEnded
+            }
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+              hasDeposited || presaleHasEnded
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : hasSufficientAllowance
-                  ? "bg-[#7DF9FF] text-black ring-4 ring-yellow-400 ring-opacity-75"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
+                ? "bg-[#7DF9FF] text-black ring-4 ring-yellow-400 ring-opacity-75"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
           >
             {depositBusy
               ? "Depositing..."
+              : presaleHasEnded
+              ? "Presale Ended"
               : hasDeposited
-                ? "✓ Deposited"
-                : "Deposit & Cover Fee"}
+              ? "✓ Deposited"
+              : "Deposit & Cover Fee"}
           </Button>
         </div>
         {(hasSufficientAllowance || hasDeposited) && (
@@ -708,18 +753,24 @@ function ManagePresaleView({
           </span>
         </div>
         <p className="text-sm text-gray-700">
-          Once the sale ends, finalize to enable claiming. Cancelling will refund
-          contributors. Proceeds withdrawals automatically skim the 3% launchpad
-          fee before the transfer.
+          Once the sale ends, finalize to enable claiming. Cancelling will
+          refund contributors. Proceeds withdrawals automatically skim the 3%
+          launchpad fee before the transfer.
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <Button
             onClick={handleFinalize}
-            disabled={ownerActionBusy}
+            disabled={
+              ownerActionBusy || presale.claimEnabled || presale.refundsEnabled
+            }
             className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]"
           >
             {ownerActionBusy && activeOwnerAction === "finalize"
               ? "Finalizing..."
+              : presale.claimEnabled
+              ? "Already Finalized"
+              : presale.refundsEnabled
+              ? "Cancelled"
               : "Finalize Presale"}
           </Button>
           <Button
@@ -736,10 +787,11 @@ function ManagePresaleView({
           <Button
             onClick={handleWithdrawProceeds}
             disabled={ownerActionBusy || !presale.claimEnabled}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${!presale.claimEnabled
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+              !presale.claimEnabled
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#C4F1BE] text-black"
-              }`}
+            }`}
           >
             {ownerActionBusy && activeOwnerAction === "withdrawProceeds"
               ? "Withdrawing..."
@@ -748,10 +800,11 @@ function ManagePresaleView({
           <Button
             onClick={handleWithdrawTokens}
             disabled={ownerActionBusy || !presale.claimEnabled}
-            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${!presale.claimEnabled
+            className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+              !presale.claimEnabled
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#FFFB8F] text-black"
-              }`}
+            }`}
           >
             {ownerActionBusy && activeOwnerAction === "withdrawTokens"
               ? "Withdrawing..."
@@ -761,7 +814,8 @@ function ManagePresaleView({
         {!presale.claimEnabled && (
           <div className="mt-2 p-3 bg-yellow-50 border-2 border-yellow-400 rounded">
             <p className="text-sm font-semibold text-yellow-800">
-              ⚠️ You must finalize the presale before withdrawing proceeds or unsold tokens.
+              ⚠️ You must finalize the presale before withdrawing proceeds or
+              unsold tokens.
             </p>
           </div>
         )}

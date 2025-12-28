@@ -34,7 +34,13 @@ export default function ProjectDetailPage() {
     presale.status === "live" || presale.status === "upcoming";
   const isPresaleFinalized = presale.claimEnabled === true;
   const isPresaleCancelled = presale.refundsEnabled === true;
-  const showPresaleView = presaleIsActive || isPresaleFinalized || isPresaleCancelled;
+  const presaleHasEnded =
+    presale.endTime && Number(presale.endTime) * 1000 < Date.now();
+
+  // Show presale view (with claim/refund UI) after the sale ends as well,
+  // so participants can claim tokens or refunds instead of seeing Market Not Available.
+  const showPresaleView =
+    presaleIsActive || isPresaleFinalized || isPresaleCancelled || presaleHasEnded;
 
   const renderMarketView = () => {
     const presaleTokens = [
