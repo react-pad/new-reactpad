@@ -33,7 +33,7 @@ export default function ProjectsPage() {
           <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
             Launchpad<br />Projects
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl font-bold max-w-2xl mx-auto sm:mx-0">
+          <p className="text-lg sm:text-xl md:text-2xl max-w-2xl mx-auto sm:mx-0">
             Participate in token presales and support new projects on the Reactive network.
           </p>
         </div>
