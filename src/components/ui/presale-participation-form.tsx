@@ -413,6 +413,9 @@ export function PresaleParticipationForm({
     );
   };
 
+  const isContributionHidden =
+    isPresaleFinalized || isPresaleCancelled || presaleHasEnded;
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -434,81 +437,100 @@ export function PresaleParticipationForm({
         <p className="text-xs text-red-600">{whitelistError}</p>
       )}
 
-      {/* Contribution Limits */}
-      <div className="rounded border-2 border-gray-300 bg-white p-3 space-y-1">
-        <h4 className="font-bold uppercase text-xs text-gray-500">
-          Contribution Limits
-        </h4>
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <span className="text-gray-500">Min:</span>{" "}
-            <span className="font-semibold">
-              {formatUnits(minContribution, paymentTokenDecimals)}{" "}
-              {presaleData.paymentTokenSymbol}
-            </span>
+      {!isContributionHidden && (
+        <>
+          {/* Contribution Limits */}
+          <div className="rounded border-2 border-gray-300 bg-white p-3 space-y-1">
+            <h4 className="font-bold uppercase text-xs text-gray-500">
+              Contribution Limits
+            </h4>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <span className="text-gray-500">Min:</span>{" "}
+                <span className="font-semibold">
+                  {formatUnits(minContribution, paymentTokenDecimals)}{" "}
+                  {presaleData.paymentTokenSymbol}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500">Max:</span>{" "}
+                <span className="font-semibold">
+                  {formatUnits(maxContribution, paymentTokenDecimals)}{" "}
+                  {presaleData.paymentTokenSymbol}
+                </span>
+              </div>
+            </div>
           </div>
+
+          {/* Amount Input */}
           <div>
-            <span className="text-gray-500">Max:</span>{" "}
-            <span className="font-semibold">
-              {formatUnits(maxContribution, paymentTokenDecimals)}{" "}
-              {presaleData.paymentTokenSymbol}
-            </span>
+            <label htmlFor="amount" className="mb-1 block font-medium">
+              Amount to Contribute ({presaleData.paymentTokenSymbol})
+            </label>
+            <Input
+              id="amount"
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.0"
+              className="w-full"
+            />
           </div>
-        </div>
-      </div>
 
-      {/* Amount Input */}
-      <div>
-        <label htmlFor="amount" className="mb-1 block font-medium">
-          Amount to Contribute ({presaleData.paymentTokenSymbol})
-        </label>
-        <Input
-          id="amount"
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="0.0"
-          className="w-full"
-        />
-      </div>
+          {/* Expected Tokens */}
+          {expectedTokens > 0n && (
+            <div className="rounded border-2 border-[#7DF9FF] bg-[#E0F7FA] p-3">
+              <p className="text-sm">
+                <span className="text-gray-600">You will receive:</span>{" "}
+                <span className="font-bold text-lg">
+                  {formatUnits(expectedTokens, saleTokenDecimals)}{" "}
+                  {presaleData.saleTokenSymbol}
+                </span>
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Rate: {Number(presaleData.rate) / 100}{" "}
+                {presaleData.saleTokenSymbol} per{" "}
+                {presaleData.paymentTokenSymbol}
+              </p>
+            </div>
+          )}
 
-      {/* Expected Tokens */}
-      {expectedTokens > 0n && (
-        <div className="rounded border-2 border-[#7DF9FF] bg-[#E0F7FA] p-3">
-          <p className="text-sm">
-            <span className="text-gray-600">You will receive:</span>{" "}
-            <span className="font-bold text-lg">
-              {formatUnits(expectedTokens, saleTokenDecimals)}{" "}
-              {presaleData.saleTokenSymbol}
-            </span>
+          {/* Contribute Button */}
+          <Button
+            type={needsApproval ? "button" : "submit"}
+            onClick={needsApproval ? approve : undefined}
+            disabled={
+              isPending ||
+              isConfirming ||
+              isApproving ||
+              isContributionDisabled ||
+              !whitelistGateOpen ||
+              (needsApproval ? false : !canContribute)
+            }
+            className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${isContributionDisabled
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#7DF9FF] text-black"
+              }`}
+          >
+            {getButtonText()}
+          </Button>
+        </>
+      )}
+
+      {isContributionHidden && (
+        <div className="rounded border-2 border-black bg-gray-100 p-4 text-center">
+          <p className="font-black uppercase tracking-wider text-gray-500">
+            {isPresaleCancelled
+              ? "Presale Cancelled"
+              : isPresaleFinalized
+                ? "Presale Finalized"
+                : "Presale Ended"}
           </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Rate: {Number(presaleData.rate) / 100} {presaleData.saleTokenSymbol}{" "}
-            per {presaleData.paymentTokenSymbol}
+          <p className="text-sm text-gray-500 mt-1">
+            Contributions are no longer accepted.
           </p>
         </div>
       )}
-
-
-      {/* Contribute Button */}
-      <Button
-        type={needsApproval ? "button" : "submit"}
-        onClick={needsApproval ? approve : undefined}
-        disabled={
-          isPending ||
-          isConfirming ||
-          isApproving ||
-          isContributionDisabled ||
-          !whitelistGateOpen ||
-          (needsApproval ? false : !canContribute)
-        }
-        className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${isContributionDisabled
-            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-            : "bg-[#7DF9FF] text-black"
-          }`}
-      >
-        {getButtonText()}
-      </Button>
 
       {error && <p className="text-red-500 text-sm">Error: {error.message}</p>}
 
