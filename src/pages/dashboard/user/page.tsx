@@ -1,12 +1,15 @@
 "use client"
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useUserTokens } from "@/lib/hooks/useUserTokens";
 import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { erc20Abi } from "viem";
 import { useReadContract, useAccount } from "wagmi";
-import { RefreshCw, ExternalLink } from "lucide-react";
+import { RefreshCw, ExternalLink, X } from "lucide-react";
 import type { Address } from "viem";
 
 function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
@@ -47,9 +50,9 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
         <Button variant="outline" size="sm" asChild>
           <Link to={`/dashboard/tools/airdrop?token=${tokenAddress}`}>Airdrop</Link>
         </Button>
-        <Button variant="outline" size="sm" asChild>
+        {/* <Button variant="outline" size="sm" asChild>
           <Link to={`/dashboard/create/presale?token=${tokenAddress}`}>Create Presale</Link>
-        </Button>
+        </Button> */}
       </div>
     </div>
   )
@@ -58,10 +61,10 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
 
 function PresaleInfo({ presaleAddress }: { presaleAddress: Address }) {
   const { presales, isLoading } = useLaunchpadPresales('all', false);
-  
+
   // Find the presale in the list
   const presaleData = presales?.find(p => p.address.toLowerCase() === presaleAddress.toLowerCase());
-  
+
   if (isLoading || !presaleData) {
     return (
       <div className="py-3 animate-pulse">
@@ -71,7 +74,7 @@ function PresaleInfo({ presaleAddress }: { presaleAddress: Address }) {
     );
   }
 
-  const progress = presaleData.hardCap > 0n 
+  const progress = presaleData.hardCap > 0n
     ? Math.round(Number((presaleData.totalRaised * 100n) / presaleData.hardCap))
     : 0;
 
@@ -106,10 +109,12 @@ export default function UserDashboardPage() {
   const { address, isConnected } = useAccount();
   const { tokens: createdTokens, isLoading, refetch } = useUserTokens();
   const { presales, isLoading: isLoadingPresales } = useLaunchpadPresales('all', false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Filter presales owned by the user
   const myPresales = presales?.filter(
-    (p) => address && p.owner.toLowerCase() === address.toLowerCase()
+    (p) => address && p.owner?.toLowerCase() === address.toLowerCase()
   ) || [];
 
   if (!isConnected) {
@@ -177,9 +182,37 @@ export default function UserDashboardPage() {
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-600 mb-4">You have not created any presales yet.</p>
-                <Button asChild>
-                  <Link to="/dashboard/create/presale">Create Your First Presale</Link>
+                <Button onClick={() => setIsModalOpen(true)}>
+                  Create Your First Presale
                 </Button>
+                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                  <DialogPortal>
+                    <DialogOverlay className="bg-black/70 backdrop-blur-sm" />
+                    <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+                      <DialogHeader>
+                        <DialogTitle>Before You Continue</DialogTitle>
+                        <DialogDescription>
+                          Please make sure to fill out all required fields in the form before proceeding. This will help ensure your presale is created successfully.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button onClick={() => {
+                          setIsModalOpen(false);
+                          navigate("/dashboard/create/project");
+                        }}>
+                          Continue to Form
+                        </Button>
+                      </DialogFooter>
+                      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                      </DialogPrimitive.Close>
+                    </DialogPrimitive.Content>
+                  </DialogPortal>
+                </Dialog>
               </div>
             )}
           </CardContent>
