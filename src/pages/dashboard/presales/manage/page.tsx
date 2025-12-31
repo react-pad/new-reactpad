@@ -228,6 +228,16 @@ function ManagePresaleView({
     },
   });
 
+  // Fetch total token supply for fee calculation
+  const { data: totalSupply } = useReadContract({
+    address: presale.saleToken,
+    abi: erc20Abi,
+    functionName: "totalSupply",
+    query: {
+      enabled: Boolean(presale.saleToken),
+    },
+  });
+
   const saleAmount = useMemo(() => {
     if (!presale?.hardCap || !presale?.rate) return 0n;
     try {
@@ -239,7 +249,12 @@ function ManagePresaleView({
     }
   }, [presale?.hardCap, presale?.rate]);
 
-  const launchpadFee = saleAmount / 50n;
+  // Fee is now 2% of total token supply, not 2% of sale amount
+  const launchpadFee = useMemo(() => {
+    if (!totalSupply) return 0n;
+    return totalSupply / 50n; // 2% of total supply
+  }, [totalSupply]);
+
   const totalRequiredAmount = saleAmount + launchpadFee;
 
   const formatTokenDisplay = useCallback(
@@ -393,8 +408,9 @@ function ManagePresaleView({
       );
       return;
     }
-    // The contract calculates the fee internally (2% of the deposited amount)
+    // The contract calculates the fee internally (2% of total token supply)
     // So we only deposit the saleAmount, but we need to approve totalRequiredAmount
+    // (saleAmount + fee) so the contract can take the fee from total supply
     writeDeposit({
       abi: LaunchpadPresaleContract.abi,
       address: presaleAddress,
@@ -567,7 +583,7 @@ function ManagePresaleView({
             Step 1 · Deposit Sale Tokens
           </p>
           <span className="text-xs font-bold text-gray-600">
-            Fee: 2% of the sale allocation
+            Fee: 2% of total token supply
           </span>
         </div>
         <p className="text-sm text-gray-700">
@@ -578,11 +594,11 @@ function ManagePresaleView({
           for contributors.
         </p>
         <p className="text-sm text-gray-700">
-          We automatically add 2% of that sale allocation (
+          The launchpad fee is 2% of the total token supply (
           <span className="font-semibold">
             {formatTokenDisplay(launchpadFee)} {saleTokenSymbol}
           </span>
-          ) as the launchpad fee. Approve and deposit the total below.
+          ). Approve and deposit the total below.
         </p>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-center">
           <Button
@@ -647,8 +663,9 @@ function ManagePresaleView({
         )}
         <p className="text-xs text-gray-600">
           Contributors receive {formatTokenDisplay(saleAmount)}{" "}
-          {saleTokenSymbol}. The launchpad retains{" "}
-          {formatTokenDisplay(launchpadFee)} {saleTokenSymbol} (2%).
+          {saleTokenSymbol}. The launchpad fee is{" "}
+          {formatTokenDisplay(launchpadFee)} {saleTokenSymbol} (2% of total
+          supply).
         </p>
       </div>
 

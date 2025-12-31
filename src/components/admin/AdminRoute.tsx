@@ -1,6 +1,7 @@
 import { useAccount } from 'wagmi';
 import { Navigate } from 'react-router-dom';
-import { isAdmin } from '@/lib/utils/admin';
+import { useIsAdmin } from '@/lib/utils/admin';
+import type { Address } from 'viem';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -8,8 +9,21 @@ interface AdminRouteProps {
 
 export function AdminRoute({ children }: AdminRouteProps) {
   const { address, isConnected } = useAccount();
+  const { isAdmin, isLoading } = useIsAdmin(address as Address | undefined);
 
-  // If wallet is not connected, redirect to home
+  // Show loading state while checking admin status
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If wallet is not connected, show access denied
   if (!isConnected) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -24,7 +38,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }
 
   // If connected wallet is not an admin, redirect to home
-  if (!isAdmin(address)) {
+  if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
 

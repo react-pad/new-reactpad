@@ -18,6 +18,7 @@ import ProjectDetailPage from "./pages/projects/[id]/page";
 import ProjectsPage from "./pages/projects/page";
 import AdminDashboard from "./pages/admin/page";
 import AdminPresales from "./pages/admin/presales/page";
+import AdminWhitelist from "./pages/admin/whitelist/page";
 import RootLayout from "./RootLayout";
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/presales" element={<AdminPresales />} />
+            <Route path="/admin/whitelist" element={<AdminWhitelist />} />
           </Route>
         </Routes>
       </BrowserRouter>

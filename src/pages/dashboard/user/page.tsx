@@ -6,6 +6,7 @@ import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Dia
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useUserTokens } from "@/lib/hooks/useUserTokens";
 import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
+import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
 import { Link, useNavigate } from "react-router-dom";
 import { erc20Abi } from "viem";
 import { useReadContract, useAccount } from "wagmi";
@@ -13,6 +14,7 @@ import { RefreshCw, ExternalLink, X } from "lucide-react";
 import type { Address } from "viem";
 
 function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
+  const { address } = useAccount();
   const { data: symbol, isLoading: isLoadingSymbol } = useReadContract({
     abi: erc20Abi,
     address: tokenAddress,
@@ -23,6 +25,9 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
     address: tokenAddress,
     functionName: 'name'
   })
+  const { isWhitelisted, isLoading: isLoadingWhitelist } = useWhitelistedCreator(
+    address as Address | undefined
+  );
 
   const isLoading = isLoadingSymbol || isLoadingName;
 
@@ -50,9 +55,19 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
         <Button variant="outline" size="sm" asChild>
           <Link to={`/dashboard/tools/airdrop?token=${tokenAddress}`}>Airdrop</Link>
         </Button>
-        {/* <Button variant="outline" size="sm" asChild>
-          <Link to={`/dashboard/create/presale?token=${tokenAddress}`}>Create Presale</Link>
-        </Button> */}
+        {!isLoadingWhitelist && (
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              to={
+                isWhitelisted
+                  ? `/dashboard/create/presale?token=${tokenAddress}`
+                  : `/dashboard/create/project`
+              }
+            >
+              Create Presale
+            </Link>
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -6,6 +6,7 @@ import { config } from "@/config";
 import { LaunchpadPresaleContract, PresaleFactory } from "@/config";
 // LaunchpadService removed - data is now stored only on blockchain
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
+import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -254,7 +255,7 @@ function CreatePresaleForm({
             for contributors.
           </li>
           <li>
-            2% of the deposited tokens are routed to the launchpad
+            2% of the total token supply is routed to the launchpad
             automatically, so approve a little extra before depositing.
           </li>
           <li>
@@ -395,8 +396,9 @@ function CreatePresaleForm({
           <button
             type="button"
             onClick={handleToggleWhitelist}
-            className={`border-4 border-black px-4 py-2 font-black uppercase tracking-wide shadow-[3px_3px_0_rgba(0,0,0,1)] ${requiresWhitelist ? "bg-[#FFB3C1]" : "bg-white"
-              }`}
+            className={`border-4 border-black px-4 py-2 font-black uppercase tracking-wide shadow-[3px_3px_0_rgba(0,0,0,1)] ${
+              requiresWhitelist ? "bg-[#FFB3C1]" : "bg-white"
+            }`}
           >
             {requiresWhitelist ? "Enabled" : "Disabled"}
           </button>
@@ -414,8 +416,8 @@ function CreatePresaleForm({
         {isChecking
           ? "Checking for existing presale..."
           : isPending
-            ? "Creating Presale..."
-            : "Create Presale"}
+          ? "Creating Presale..."
+          : "Create Presale"}
       </Button>
     </>
   );
@@ -426,6 +428,8 @@ export default function CreatePresalePage() {
   const navigate = useNavigate();
   const { address } = useAccount();
   const { setPresales } = useBlockchainStore();
+  const { isWhitelisted, isLoading: isLoadingWhitelist } =
+    useWhitelistedCreator(address as Address | undefined);
   const [creationHash, setCreationHash] = useState<`0x${string}` | undefined>(
     undefined
   );
@@ -442,6 +446,14 @@ export default function CreatePresalePage() {
     owner: address ?? "",
     requiresWhitelist: false,
   });
+
+  // Redirect to project submission if not whitelisted
+  useEffect(() => {
+    if (!isLoadingWhitelist && address && isWhitelisted === false) {
+      toast.info("Please submit a project first before creating a presale.");
+      navigate("/dashboard/create/project");
+    }
+  }, [isLoadingWhitelist, isWhitelisted, address, navigate]);
 
   const {
     data: receipt,
@@ -528,6 +540,24 @@ export default function CreatePresalePage() {
     savePresaleToDatabase,
     navigate,
   ]);
+
+  // Show loading state while checking whitelist
+  if (isLoadingWhitelist || !address) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-black">
+        <Card className="max-w-2xl mx-auto">
+          <CardContent className="py-12 text-center">
+            <p className="text-lg text-gray-600">Checking access...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Don't render form if not whitelisted (redirect will happen)
+  if (isWhitelisted === false) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 text-black">

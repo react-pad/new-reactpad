@@ -1,7 +1,10 @@
 import { ArrowRight, Box, CircleDollarSign, Factory, ImageIcon, Lock, Send, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAccount } from "wagmi";
+import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
+import type { Address } from "viem";
 
-const creationOptions = [
+const getCreationOptions = (isWhitelisted: boolean | undefined) => [
   {
     to: "/dashboard/create/token",
     title: "Create a new Token",
@@ -9,7 +12,7 @@ const creationOptions = [
     icon: CircleDollarSign,
   },
   {
-    to: "/dashboard/create/presale",
+    to: isWhitelisted ? "/dashboard/create/presale" : "/dashboard/create/project",
     title: "Create a Presale",
     description: "Launch a presale for your token to raise funds.",
     icon: Factory,
@@ -50,6 +53,12 @@ const toolOptions = [
 ];
 
 export default function CreateHubPage() {
+  const { address } = useAccount();
+  const { isWhitelisted } = useWhitelistedCreator(
+    address as Address | undefined
+  );
+  const creationOptions = getCreationOptions(isWhitelisted);
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 text-black">
       <section className="mb-8 sm:mb-12 text-right lg:text-left">
