@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { baseSepolia } from "viem/chains";
+import { reactiveTestnet } from "viem/chains";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
 import { useIsAdmin } from "@/lib/utils/admin";
 import type { Address } from "viem";
@@ -33,7 +33,7 @@ const SidebarContent = () => {
   const { isAdmin } = useIsAdmin(address as Address | undefined);
 
   const isConnected = !!address;
-  const isWrongNetwork = isConnected && chain?.id !== baseSepolia.id;
+  const isWrongNetwork = isConnected && chain?.id !== reactiveTestnet.id;
 
   const { data: balanceData } = useBalance({ address });
   const balance = balanceData ? parseFloat(balanceData.formatted) : 0;
@@ -105,7 +105,7 @@ const SidebarContent = () => {
           </div>
           {isWrongNetwork ? (
             <button
-              onClick={() => switchChain?.({ chainId: baseSepolia.id })}
+              onClick={() => switchChain?.({ chainId: reactiveTestnet.id })}
               type="button"
               className="w-full mt-4 bg-yellow-500 text-black font-black uppercase text-xs tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-2"
             >
