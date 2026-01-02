@@ -1,6 +1,6 @@
 import { TokenLocker } from '@/config';
 import { useMemo } from 'react';
-import { erc20Abi, formatUnits, type Address } from 'viem';
+import { erc20Abi, formatUnits, type Address, type Abi } from 'viem';
 import { useReadContracts } from 'wagmi';
 import { useUserLocks } from './useUserLocks';
 
@@ -22,7 +22,7 @@ export function useAllLocks() {
     if (!lockIds || lockIds.length === 0) return [];
     return (lockIds as bigint[]).flatMap(lockId => [
       {
-        abi: TokenLocker.abi,
+        abi: TokenLocker.abi as Abi,
         address: TokenLocker.address,
         functionName: 'getLock',
         args: [lockId],
