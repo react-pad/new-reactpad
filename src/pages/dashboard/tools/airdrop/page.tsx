@@ -2,25 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AirdropMultisenderContract } from "@/config";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { erc20Abi, formatEther, maxUint256, parseEther } from "viem";
+import { erc20Abi, formatUnits, maxUint256, parseUnits } from "viem";
 import {
     useAccount,
+    useBalance,
     useReadContract,
     useWaitForTransactionReceipt,
     useWriteContract,
 } from "wagmi";
+import { Send, Coins, Upload, CheckCircle2, AlertCircle, Users, Wallet } from "lucide-react";
 
 export default function AirdropPage() {
     const [searchParams] = useSearchParams();
@@ -31,72 +26,157 @@ export default function AirdropPage() {
         writeContract: sendTokens,
         isPending: isSending,
         error: sendError,
+        reset: resetSend,
     } = useWriteContract();
     const {
         data: approveHash,
         writeContract: approve,
         isPending: isApproving,
         error: approveError,
+        reset: resetApprove,
     } = useWriteContract();
 
-    const [tokenAddress, setTokenAddress] = useState(
-        searchParams.get("token") ?? ""
-    );
+    // Check if token came from URL
+    const tokenFromUrl = searchParams.get("token")?.trim() ?? "";
+    const [tokenAddress, setTokenAddress] = useState(tokenFromUrl);
     const [recipientsData, setRecipientsData] = useState("");
-    const [sendType, setSendType] = useState<"erc20" | "eth">("eth");
+    const [sendType, setSendType] = useState<"erc20" | "react">(tokenFromUrl ? "erc20" : "react");
 
+    // Normalize token address
+    const normalizedTokenAddress = useMemo(() => {
+        return tokenAddress.trim().toLowerCase() as `0x${string}`;
+    }, [tokenAddress]);
+
+    const isValidTokenAddress = useMemo(() => {
+        return !!tokenAddress && tokenAddress.trim().length === 42 && tokenAddress.startsWith("0x");
+    }, [tokenAddress]);
+
+    // Token info
+    const { data: tokenDecimals } = useReadContract({
+        abi: erc20Abi,
+        address: normalizedTokenAddress,
+        functionName: "decimals",
+        query: {
+            enabled: isValidTokenAddress && sendType === "erc20",
+        },
+    });
+
+    const { data: tokenSymbol } = useReadContract({
+        abi: erc20Abi,
+        address: normalizedTokenAddress,
+        functionName: "symbol",
+        query: {
+            enabled: isValidTokenAddress && sendType === "erc20",
+        },
+    });
+
+    const { data: tokenBalance } = useReadContract({
+        abi: erc20Abi,
+        address: normalizedTokenAddress,
+        functionName: "balanceOf",
+        args: [address!],
+        query: {
+            enabled: !!address && isValidTokenAddress && sendType === "erc20",
+        },
+    });
+
+    // Native REACT balance
+    const { data: reactBalance } = useBalance({
+        address: address,
+        query: {
+            enabled: !!address && sendType === "react",
+        },
+    });
+
+    // Parse recipients data
     const parsedRecipients = useMemo(() => {
         if (!recipientsData) {
-            return { recipients: [], amounts: [] };
+            return { recipients: [], amounts: [], errors: [] as string[] };
         }
-        return recipientsData.split("\n").reduce(
-            (acc, line) => {
-                const parts = line.split(",");
-                if (parts.length === 2) {
-                    const recipient = parts[0].trim();
-                    const amountStr = parts[1].trim();
-                    if (recipient && amountStr) {
-                        try {
-                            const amount = parseEther(amountStr);
-                            acc.recipients.push(recipient as `0x${string}`);
-                            acc.amounts.push(amount);
-                        } catch (error) {
-                            console.log({ error });
-                            console.warn(`Could not parse amount for line: "${line}"`);
-                        }
-                    }
+
+        const decimals = sendType === "erc20" ? (tokenDecimals ?? 18) : 18;
+        const errors: string[] = [];
+
+        const result = recipientsData.split("\n").reduce(
+            (acc, line, index) => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return acc; // Skip empty lines
+
+                const parts = trimmedLine.split(",");
+                if (parts.length !== 2) {
+                    errors.push(`Line ${index + 1}: Invalid format (expected: address,amount)`);
+                    return acc;
                 }
+
+                const recipient = parts[0].trim();
+                const amountStr = parts[1].trim();
+
+                // Validate address
+                if (!recipient.startsWith("0x") || recipient.length !== 42) {
+                    errors.push(`Line ${index + 1}: Invalid address`);
+                    return acc;
+                }
+
+                // Parse amount
+                if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) {
+                    errors.push(`Line ${index + 1}: Invalid amount`);
+                    return acc;
+                }
+
+                try {
+                    const amount = parseUnits(amountStr, decimals);
+                    acc.recipients.push(recipient as `0x${string}`);
+                    acc.amounts.push(amount);
+                } catch (error) {
+                    errors.push(`Line ${index + 1}: Could not parse amount "${amountStr}"`);
+                }
+
                 return acc;
             },
-            { recipients: [] as `0x${string}`[], amounts: [] as bigint[] }
+            { recipients: [] as `0x${string}`[], amounts: [] as bigint[], errors }
         );
-    }, [recipientsData]);
+
+        result.errors = errors;
+        return result;
+    }, [recipientsData, tokenDecimals, sendType]);
 
     const totalAmount = useMemo(() => {
-        return parsedRecipients.amounts.reduce(
-            (acc, curr) => acc + curr,
-            BigInt(0)
-        );
+        return parsedRecipients.amounts.reduce((acc, curr) => acc + curr, BigInt(0));
     }, [parsedRecipients]);
 
+    const displayDecimals = sendType === "erc20" ? (tokenDecimals ?? 18) : 18;
+    const displaySymbol = sendType === "erc20" ? (tokenSymbol ?? "tokens") : "REACT";
+
+    // Allowance check for ERC-20
     const { data: allowance, refetch: refetchAllowance } = useReadContract({
         abi: erc20Abi,
-        address: tokenAddress as `0x${string}`,
+        address: normalizedTokenAddress,
         functionName: "allowance",
         args: [address!, AirdropMultisenderContract.address as `0x${string}`],
         query: {
-            enabled: !!address && !!tokenAddress && sendType === "erc20",
+            enabled: !!address && isValidTokenAddress && sendType === "erc20",
         },
     });
 
     const needsApproval = useMemo(() => {
-        if (sendType === "eth" || !allowance) return false;
+        if (sendType === "react") return false;
+        if (allowance === undefined) return true;
         return allowance < totalAmount;
     }, [allowance, totalAmount, sendType]);
 
+    // Check sufficient balance
+    const hasSufficientBalance = useMemo(() => {
+        if (totalAmount === 0n) return true;
+        if (sendType === "erc20") {
+            return tokenBalance !== undefined && tokenBalance >= totalAmount;
+        } else {
+            return reactBalance !== undefined && reactBalance.value >= totalAmount;
+        }
+    }, [sendType, tokenBalance, reactBalance, totalAmount]);
+
     const handleApprove = () => {
         approve({
-            address: tokenAddress as `0x${string}`,
+            address: normalizedTokenAddress,
             abi: erc20Abi,
             functionName: "approve",
             args: [AirdropMultisenderContract.address as `0x${string}`, maxUint256],
@@ -104,7 +184,17 @@ export default function AirdropPage() {
     };
 
     const handleSend = () => {
-        if (sendType === "eth") {
+        if (parsedRecipients.recipients.length === 0) {
+            toast.error("No valid recipients found");
+            return;
+        }
+
+        if (!hasSufficientBalance) {
+            toast.error("Insufficient balance");
+            return;
+        }
+
+        if (sendType === "react") {
             sendTokens({
                 address: AirdropMultisenderContract.address as `0x${string}`,
                 abi: AirdropMultisenderContract.abi,
@@ -118,7 +208,7 @@ export default function AirdropPage() {
                 abi: AirdropMultisenderContract.abi,
                 functionName: "sendERC20",
                 args: [
-                    tokenAddress as `0x${string}`,
+                    normalizedTokenAddress,
                     parsedRecipients.recipients,
                     parsedRecipients.amounts,
                 ],
@@ -126,18 +216,15 @@ export default function AirdropPage() {
         }
     };
 
-    const {
-        isLoading: isApproveConfirming,
-        isSuccess: isApproveConfirmed,
-    } = useWaitForTransactionReceipt({ hash: approveHash });
+    const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } =
+        useWaitForTransactionReceipt({ hash: approveHash });
     const { isLoading: isSendConfirming, isSuccess: isSendConfirmed } =
         useWaitForTransactionReceipt({ hash: sendHash });
 
-    // Track toast IDs to prevent duplicates and allow dismissal
+    // Track toast IDs to prevent duplicates
     const approveToastId = useRef<string | number | null>(null);
     const sendToastId = useRef<string | number | null>(null);
 
-    // Show loading toast while approval is confirming
     useEffect(() => {
         if (isApproveConfirming && !approveToastId.current) {
             approveToastId.current = toast.loading("Approval confirming...");
@@ -147,7 +234,6 @@ export default function AirdropPage() {
         }
     }, [isApproveConfirming]);
 
-    // Show loading toast while send is confirming
     useEffect(() => {
         if (isSendConfirming && !sendToastId.current) {
             sendToastId.current = toast.loading("Transaction confirming...");
@@ -161,100 +247,279 @@ export default function AirdropPage() {
         if (isApproveConfirmed) {
             toast.success("Approval successful! You can now send your tokens.");
             refetchAllowance();
+            resetApprove();
         }
-    }, [isApproveConfirmed, refetchAllowance]);
+    }, [isApproveConfirmed, refetchAllowance, resetApprove]);
 
     useEffect(() => {
         if (isSendConfirmed && sendHash) {
-            toast.success(`Tokens sent successfully! Tx: ${sendHash.slice(0, 10)}...${sendHash.slice(-8)}`);
+            toast.success("Airdrop sent successfully!");
             setRecipientsData("");
+            resetSend();
         }
-    }, [isSendConfirmed, sendHash]);
+    }, [isSendConfirmed, sendHash, resetSend]);
 
     useEffect(() => {
-        const err = sendError || approveError;
-        if (err) {
-            toast.error(err.message);
+        if (approveError) {
+            toast.error(`Approval failed: ${approveError.message.slice(0, 100)}`);
         }
-    }, [sendError, approveError]);
+    }, [approveError]);
+
+    useEffect(() => {
+        if (sendError) {
+            console.error("Send error:", sendError);
+            toast.error(`Send failed: ${sendError.message.slice(0, 100)}`);
+        }
+    }, [sendError]);
+
+    const isFormValid = useMemo(() => {
+        if (parsedRecipients.recipients.length === 0) return false;
+        if (parsedRecipients.errors.length > 0) return false;
+        if (sendType === "erc20" && !isValidTokenAddress) return false;
+        return true;
+    }, [parsedRecipients, sendType, isValidTokenAddress]);
 
     return (
-        <div className="container mx-auto px-4 py-12 text-black">
-            <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Airdrop Tool</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label>Send Type</Label>
-                        <Select
-                            value={sendType}
-                            onValueChange={(value) =>
-                                setSendType(value as "erc20" | "eth")
-                            }
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select send type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="erc20">ERC20 Token</SelectItem>
-                                <SelectItem value="eth">REACT</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    {sendType === "erc20" && (
-                        <div className="space-y-2">
-                            <Label htmlFor="token-address">Token Address</Label>
-                            <Input
-                                id="token-address"
-                                placeholder="0x..."
-                                value={tokenAddress}
-                                onChange={(e) => setTokenAddress(e.target.value)}
-                            />
+        <div className="container mx-auto px-4 py-8 text-black">
+            <div className="max-w-3xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <div className="inline-block">
+                        <div className="border-4 border-black bg-[#90EE90] p-4 sm:p-6 shadow-[6px_6px_0_rgba(0,0,0,1)]">
+                            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+                                <Send className="w-6 h-6 sm:w-10 sm:h-10" />
+                                <h1 className="text-2xl sm:text-4xl md:text-5xl font-black uppercase tracking-wider">Airdrop</h1>
+                            </div>
+                            <p className="text-gray-700 font-bold text-sm sm:text-base">Send tokens to multiple addresses in one transaction</p>
                         </div>
-                    )}
-                    <div className="space-y-2">
-                        <Label htmlFor="recipients">Recipients and Amounts</Label>
-                        <Textarea
-                            id="recipients"
-                            placeholder="0x...,100\n0x...,200"
-                            value={recipientsData}
-                            onChange={(e) => setRecipientsData(e.target.value)}
-                            className="min-h-[200px]"
-                        />
-                        <p className="text-xs text-gray-500">
-                            Enter one address and amount per line, separated by a comma.
-                        </p>
                     </div>
+                </div>
 
-                    <div className="text-sm">
-                        Total to send:{" "}
-                        <span className="font-bold">
-                            {formatEther(totalAmount)} {sendType === "eth" ? "REACT" : "tokens"}
-                        </span>
-                    </div>
+                {/* Send Type Selection */}
+                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+                    <CardHeader className="border-b-2 border-black bg-[#7DF9FF] p-4">
+                        <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
+                            <Coins className="w-5 h-5" />
+                            Select Token Type
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                onClick={() => setSendType("erc20")}
+                                className={`p-4 border-4 border-black text-left transition-all ${
+                                    sendType === "erc20"
+                                        ? "bg-[#90EE90] shadow-[4px_4px_0_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+                                        : "bg-white shadow-[2px_2px_0_rgba(0,0,0,1)] hover:bg-gray-50"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-4 h-4 rounded-full border-2 border-black ${sendType === "erc20" ? "bg-black" : ""}`} />
+                                    <div>
+                                        <p className="font-black uppercase">ERC-20 Token</p>
+                                        <p className="text-xs text-gray-600">Any ERC-20 token</p>
+                                    </div>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSendType("react");
+                                    setTokenAddress("");
+                                }}
+                                className={`p-4 border-4 border-black text-left transition-all ${
+                                    sendType === "react"
+                                        ? "bg-[#90EE90] shadow-[4px_4px_0_rgba(0,0,0,1)] translate-x-[-2px] translate-y-[-2px]"
+                                        : "bg-white shadow-[2px_2px_0_rgba(0,0,0,1)] hover:bg-gray-50"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-4 h-4 rounded-full border-2 border-black ${sendType === "react" ? "bg-black" : ""}`} />
+                                    <div>
+                                        <p className="font-black uppercase">REACT</p>
+                                        <p className="text-xs text-gray-600">Native currency</p>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </CardContent>
+                </Card>
 
-                    {needsApproval ? (
-                        <Button
-                            onClick={handleApprove}
-                            disabled={isApproving || isApproveConfirming}
-                            className="w-full"
-                        >
-                            {isApproving || isApproveConfirming
-                                ? "Approving..."
-                                : "Approve Tokens"}
-                        </Button>
-                    ) : (
-                        <Button
-                            onClick={handleSend}
-                            disabled={isSending || isSendConfirming}
-                            className="w-full"
-                        >
-                            {isSending || isSendConfirming ? "Sending..." : "Send"}
-                        </Button>
-                    )}
-                </CardContent>
-            </Card>
+                {/* Token Address (for ERC-20) */}
+                {sendType === "erc20" && (
+                    <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+                        <CardHeader className="border-b-2 border-black bg-[#FFFB8F] p-4">
+                            <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
+                                <Wallet className="w-5 h-5" />
+                                Token Details
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="token-address" className="font-bold uppercase text-xs">Token Address</Label>
+                                <Input
+                                    id="token-address"
+                                    placeholder="0x..."
+                                    value={tokenAddress}
+                                    onChange={(e) => setTokenAddress(e.target.value)}
+                                    className="border-2 border-black font-mono"
+                                />
+                            </div>
+                            {isValidTokenAddress && tokenSymbol && (
+                                <div className="p-3 bg-gray-100 border-2 border-black">
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-gray-500 text-xs uppercase font-bold">Token</p>
+                                            <p className="font-black">{tokenSymbol}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 text-xs uppercase font-bold">Your Balance</p>
+                                            <p className="font-black">
+                                                {tokenBalance !== undefined 
+                                                    ? `${Number(formatUnits(tokenBalance, tokenDecimals ?? 18)).toLocaleString()} ${tokenSymbol}`
+                                                    : "Loading..."}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* REACT Balance (for native) */}
+                {sendType === "react" && reactBalance && (
+                    <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+                        <CardContent className="p-4">
+                            <div className="p-3 bg-gray-100 border-2 border-black">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-gray-500 text-xs uppercase font-bold">Your REACT Balance</p>
+                                        <p className="font-black text-lg">
+                                            {Number(formatUnits(reactBalance.value, 18)).toLocaleString()} REACT
+                                        </p>
+                                    </div>
+                                    <Coins className="w-8 h-8 text-[#7DF9FF]" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Recipients */}
+                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+                    <CardHeader className="border-b-2 border-black bg-[#FFB6C1] p-4">
+                        <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
+                            <Users className="w-5 h-5" />
+                            Recipients
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="recipients" className="font-bold uppercase text-xs">
+                                Addresses and Amounts
+                            </Label>
+                            <Textarea
+                                id="recipients"
+                                placeholder={`0x1234...abcd,100\n0x5678...efgh,200\n0x9012...ijkl,50`}
+                                value={recipientsData}
+                                onChange={(e) => setRecipientsData(e.target.value)}
+                                className="min-h-[200px] border-2 border-black font-mono text-sm"
+                            />
+                            <p className="text-xs text-gray-500">
+                                Enter one address and amount per line, separated by a comma. Example: <code className="bg-gray-100 px-1">0x123...,100</code>
+                            </p>
+                        </div>
+
+                        {/* Parsing Errors */}
+                        {parsedRecipients.errors.length > 0 && (
+                            <div className="p-3 bg-red-50 border-2 border-red-500 space-y-1">
+                                <p className="font-bold text-red-600 text-sm flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" /> Errors found:
+                                </p>
+                                {parsedRecipients.errors.slice(0, 5).map((error, i) => (
+                                    <p key={i} className="text-xs text-red-600">{error}</p>
+                                ))}
+                                {parsedRecipients.errors.length > 5 && (
+                                    <p className="text-xs text-red-600">...and {parsedRecipients.errors.length - 5} more errors</p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Summary */}
+                        {parsedRecipients.recipients.length > 0 && (
+                            <div className="p-4 bg-gray-100 border-2 border-black">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center p-3 bg-white border-2 border-black">
+                                        <p className="text-xs text-gray-500 uppercase font-bold">Recipients</p>
+                                        <p className="text-2xl font-black">{parsedRecipients.recipients.length}</p>
+                                    </div>
+                                    <div className="text-center p-3 bg-white border-2 border-black">
+                                        <p className="text-xs text-gray-500 uppercase font-bold">Total Amount</p>
+                                        <p className="text-2xl font-black">
+                                            {Number(formatUnits(totalAmount, displayDecimals)).toLocaleString()}
+                                        </p>
+                                        <p className="text-xs font-bold text-gray-600">{displaySymbol}</p>
+                                    </div>
+                                </div>
+                                {!hasSufficientBalance && totalAmount > 0n && (
+                                    <div className="mt-3 p-2 bg-red-100 border-2 border-red-500 text-center">
+                                        <p className="text-red-600 font-bold text-sm">⚠️ Insufficient balance</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Action Buttons */}
+                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+                    <CardContent className="p-4">
+                        {sendType === "erc20" && needsApproval && isFormValid ? (
+                            <div className="space-y-3">
+                                <p className="text-center text-sm text-gray-600">
+                                    Step 1: Approve tokens for the airdrop contract
+                                </p>
+                                <Button
+                                    onClick={handleApprove}
+                                    disabled={isApproving || isApproveConfirming || !isFormValid}
+                                    className="w-full border-4 border-black bg-[#FFFB8F] text-black font-black uppercase tracking-wider shadow-[4px_4px_0_rgba(0,0,0,1)] hover:bg-[#EDE972] hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all py-6 text-lg"
+                                >
+                                    <Upload className="w-5 h-5 mr-2" />
+                                    {isApproving || isApproveConfirming ? "Approving..." : "Approve Tokens"}
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {sendType === "erc20" && !needsApproval && isFormValid && (
+                                    <p className="text-center text-sm text-green-600 font-bold flex items-center justify-center gap-1">
+                                        <CheckCircle2 className="w-4 h-4" /> Tokens approved
+                                    </p>
+                                )}
+                                <Button
+                                    onClick={handleSend}
+                                    disabled={isSending || isSendConfirming || !isFormValid || !hasSufficientBalance}
+                                    className="w-full border-4 border-black bg-[#90EE90] text-black font-black uppercase tracking-wider shadow-[4px_4px_0_rgba(0,0,0,1)] hover:bg-[#7DE07D] hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all py-6 text-lg"
+                                >
+                                    <Send className="w-5 h-5 mr-2" />
+                                    {isSending || isSendConfirming ? "Sending..." : `Send Airdrop`}
+                                </Button>
+                            </div>
+                        )}
+
+                        {!isFormValid && recipientsData && (
+                            <p className="text-center text-xs text-gray-500 mt-2">
+                                {sendType === "erc20" && !isValidTokenAddress 
+                                    ? "Enter a valid token address" 
+                                    : parsedRecipients.recipients.length === 0 
+                                        ? "Add valid recipients" 
+                                        : "Fix errors above to continue"}
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }
