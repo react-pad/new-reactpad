@@ -264,7 +264,7 @@ export default function UserDashboardPage() {
         </Card>
         <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
           <CardContent className="p-4 text-center">
-            <Lock className="w-6 h-6 mx-auto mb-2 text-[#FFFB8F]" />
+            <Lock className="w-6 h-6 mx-auto mb-2 text-[#CA8A04]" />
             <p className="text-xs text-gray-500 uppercase font-bold">Active Locks</p>
             <p className="text-3xl font-black">{activeLocks.length}</p>
           </CardContent>
