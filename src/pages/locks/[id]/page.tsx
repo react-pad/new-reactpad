@@ -184,8 +184,8 @@ export default function LockDetailPage() {
                             'bg-yellow-500 text-black'
                         }`}>
                             {lockStatus === 'withdrawn' ? '✓ Withdrawn' :
-                             lockStatus === 'unlockable' ? '🔓 Unlockable' :
-                             '🔒 Locked'}
+                             lockStatus === 'unlockable' ? 'Unlockable' :
+                             'Locked'}
                         </div>
                     </div>
                     {lock.description && (

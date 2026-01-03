@@ -402,9 +402,9 @@ export default function UserDashboardPage() {
 
       {/* My Created Tokens - Full Width */}
       <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 mt-6">
-        <CardHeader className="border-b-2 border-black bg-[#000000] p-4">
+        <CardHeader className="border-b-2 border-black bg-[#ffffff] p-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2 text-white">
+            <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2 text-black">
               <Coins className="w-5 h-5" />
               My Created Tokens
             </CardTitle>
@@ -447,10 +447,10 @@ export default function UserDashboardPage() {
       {/* Quick Actions */}
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
         <Link to="/dashboard/create/token">
-          <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer bg-[#000000]">
+          <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer bg-[#FF00F5]">
             <CardContent className="p-4 text-center">
-              <Coins className="w-8 h-8 mx-auto mb-2 text-white" />
-              <p className="font-black uppercase text-sm text-white">Create Token</p>
+              <Coins className="w-8 h-8 mx-auto mb-2" />
+              <p className="font-black uppercase text-sm">Create Token</p>
             </CardContent>
           </Card>
         </Link>
