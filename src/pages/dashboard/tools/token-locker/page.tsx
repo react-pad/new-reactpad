@@ -422,11 +422,12 @@ function CreateLockForm({ onSuccess }: { onSuccess: () => void }) {
         if (isLockSuccess && lockHash && processedLockHash.current !== lockHash) {
             processedLockHash.current = lockHash;
             toast.success(`Tokens locked successfully!`);
-            onSuccess();
+            onSuccess(); // Refetch locks
             setAmount("");
             setDuration("");
             setName("");
             setDescription("");
+            setHasApproved(false); // Reset approval state for next lock
             resetLock();
         }
     }, [isLockSuccess, lockHash, onSuccess, resetLock]);
@@ -561,11 +562,11 @@ function ExtendLockModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-            <Card className="border-4 border-black shadow-[8px_8px_0_rgba(0,0,0,1)] max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-                <CardHeader className="border-b-2 border-black bg-[#FFFB8F]">
+            <Card className="border-4 border-black shadow-[8px_8px_0_rgba(0,0,0,1)] max-w-md w-full mx-4 p-0 gap-0" onClick={e => e.stopPropagation()}>
+                <CardHeader className="border-b-2 border-black bg-[#FFFB8F] p-4">
                     <CardTitle className="font-black uppercase tracking-wider">Extend Lock</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 space-y-4">
                     <div className="space-y-2">
                         <Label className="font-bold uppercase text-xs">Additional Days</Label>
                         <Input 
@@ -637,11 +638,11 @@ function TransferLockModal({
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-            <Card className="border-4 border-black shadow-[8px_8px_0_rgba(0,0,0,1)] max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-                <CardHeader className="border-b-2 border-black bg-[#FFB6C1]">
+            <Card className="border-4 border-black shadow-[8px_8px_0_rgba(0,0,0,1)] max-w-md w-full mx-4 p-0 gap-0" onClick={e => e.stopPropagation()}>
+                <CardHeader className="border-b-2 border-black bg-[#FFB6C1] p-4">
                     <CardTitle className="font-black uppercase tracking-wider">Transfer Lock Ownership</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
+                <CardContent className="p-4 space-y-4">
                     <p className="text-sm text-gray-600">
                         ⚠️ This action is irreversible. The new owner will have full control over this lock.
                     </p>
