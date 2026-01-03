@@ -52,7 +52,7 @@ const SidebarContent = () => {
           setEthPriceUsd(price);
         }
       } catch (error) {
-        console.error("Failed to fetch ETH price:", error);
+        console.error("Failed to fetch REACT price:", error);
       }
     };
 

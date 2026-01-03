@@ -32,7 +32,7 @@ export function usePresaleContribute() {
   const contribute = useCallback(
     async ({ presaleAddress, amount, isPaymentETH }: ContributeParams) => {
       if (isPaymentETH) {
-        // For ETH payments, send ETH value and pass 0 as amount parameter
+        // For REACT payments, send REACT value and pass 0 as amount parameter
         writeContract({
           abi: LaunchpadPresaleContract.abi,
           address: presaleAddress,
@@ -41,7 +41,7 @@ export function usePresaleContribute() {
           value: amount,
         });
       } else {
-        // For ERC20 payments, pass amount as parameter with no ETH value
+        // For ERC20 payments, pass amount as parameter with no REACT value
         writeContract({
           abi: LaunchpadPresaleContract.abi,
           address: presaleAddress,

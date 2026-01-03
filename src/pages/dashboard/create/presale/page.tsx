@@ -277,7 +277,7 @@ function CreatePresaleForm({
         <Label htmlFor="paymentToken">Payment Token Address</Label>
         <Input
           id="paymentToken"
-          placeholder="0x... (leave blank for ETH)"
+          placeholder="0x... (leave blank for REACT)"
           value={paymentToken}
           onChange={handleChange}
         />
@@ -323,7 +323,7 @@ function CreatePresaleForm({
               <p className="font-semibold">Calculated Rate:</p>
               <p>
                 {(Number(saleAmount) / Number(hardCap)).toFixed(2)} tokens per{" "}
-                {paymentToken ? "payment token" : "ETH"}
+                {paymentToken ? "payment token" : "REACT"}
               </p>
             </div>
           )}

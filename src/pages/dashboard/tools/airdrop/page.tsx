@@ -198,7 +198,7 @@ export default function AirdropPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="erc20">ERC20 Token</SelectItem>
-                                <SelectItem value="eth">ETH</SelectItem>
+                                <SelectItem value="eth">REACT</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -230,7 +230,7 @@ export default function AirdropPage() {
                     <div className="text-sm">
                         Total to send:{" "}
                         <span className="font-bold">
-                            {formatEther(totalAmount)} {sendType === "eth" ? "ETH" : "tokens"}
+                            {formatEther(totalAmount)} {sendType === "eth" ? "REACT" : "tokens"}
                         </span>
                     </div>
 

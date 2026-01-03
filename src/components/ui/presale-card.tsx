@@ -73,8 +73,8 @@ export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
     // Use a deterministic avatar based on the token address
     const logo = `https://api.dicebear.com/7.x/rings/svg?seed=${presale.saleToken}`;
 
-    // Use payment token symbol if available, otherwise default to ETH
-    const currency = presale.paymentTokenSymbol || 'ETH';
+    // Use payment token symbol if available, otherwise default to REACT
+    const currency = presale.paymentTokenSymbol || 'REACT';
 
     const project: Project = {
         id: presale.address,

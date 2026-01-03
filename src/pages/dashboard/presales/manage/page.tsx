@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LaunchpadPresaleContract } from "@/config";
+import { LaunchpadPresaleContract, EXPLORER_URL } from "@/config";
 import {
   useLaunchpadPresale,
   type PresaleWithStatus,
@@ -241,7 +241,7 @@ function ManagePresaleView({
   const saleAmount = useMemo(() => {
     if (!presale?.hardCap || !presale?.rate) return 0n;
     try {
-      // Rate is stored as scaled by 100 (e.g., 20000 = 200 tokens per ETH)
+      // Rate is stored as scaled by 100 (e.g., 20000 = 200 tokens per REACT)
       return (presale.hardCap * presale.rate) / 100n;
     } catch (error) {
       console.error("Error calculating sale amount:", error);
@@ -564,7 +564,7 @@ function ManagePresaleView({
         <p>
           Manage contract{" "}
           <a
-            href={`https://sepolia.etherscan.io/address/${presaleAddress}`}
+            href={`${EXPLORER_URL}/address/${presaleAddress}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline font-medium"

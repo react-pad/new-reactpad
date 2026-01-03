@@ -67,7 +67,7 @@ export function NFTCard({ nftAddress }: { nftAddress: `0x${string}` }) {
                 </div>
 
                 <div className="mt-auto pt-6 border-t-2 border-black">
-                    <p>Price: {formatEther(mintPrice?.result as bigint ?? BigInt(0))} ETH</p>
+                    <p>Price: {formatEther(mintPrice?.result as bigint ?? BigInt(0))} REACT</p>
                     <button className="w-full mt-4 bg-blue-400 text-white h-12 font-black uppercase text-sm tracking-wider border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all">
                         MINT
                     </button>

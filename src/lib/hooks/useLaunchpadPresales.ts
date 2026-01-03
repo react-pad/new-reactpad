@@ -302,8 +302,8 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
           saleTokenSymbol: saleTokenInfo?.symbol,
           saleTokenName: saleTokenInfo?.name,
           saleTokenDecimals: saleTokenInfo?.decimals,
-          paymentTokenSymbol: presale.isPaymentETH ? 'ETH' : paymentTokenInfo?.symbol,
-          paymentTokenName: presale.isPaymentETH ? 'Ethereum' : paymentTokenInfo?.name,
+          paymentTokenSymbol: presale.isPaymentETH ? 'REACT' : paymentTokenInfo?.symbol,
+          paymentTokenName: presale.isPaymentETH ? 'Reactive' : paymentTokenInfo?.name,
           paymentTokenDecimals: presale.isPaymentETH ? 18 : paymentTokenInfo?.decimals,
         });
       }
@@ -513,10 +513,10 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
       }
     }
 
-    // Set ETH values if payment is ETH
+    // Set REACT values if payment is REACT
     if (presaleData.isPaymentETH) {
-      paymentTokenSymbol = 'ETH';
-      paymentTokenName = 'Ethereum';
+      paymentTokenSymbol = 'REACT';
+      paymentTokenName = 'Reactive';
       paymentTokenDecimals = 18;
     }
 

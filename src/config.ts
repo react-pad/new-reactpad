@@ -36,6 +36,9 @@ export const config = createConfig({
     },
 });
 
+// Block explorer URL for Lasna Testnet
+export const EXPLORER_URL = "https://lasna.reactscan.net";
+
 const uint256Max = maxUint256;
 const feeToSpacing = {
     3000: 60,

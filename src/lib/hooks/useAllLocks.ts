@@ -15,8 +15,8 @@ interface LockResult {
   description: string;
 }
 
-export function useAllLocks() {
-  const { lockIds, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks();
+export function useAllLocks(forceRefetch = false) {
+  const { lockIds, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks(forceRefetch);
 
   const lockQueries = useMemo(() => {
     if (!lockIds || lockIds.length === 0) return [];
@@ -110,8 +110,8 @@ export function useAllLocks() {
 
   }, [lockData, tokenInfoMap, lockIds]);
 
-  const refetch = () => {
-    refetchLocks();
+  const refetch = async () => {
+    await refetchLocks();
     refetchLockData();
   }
 

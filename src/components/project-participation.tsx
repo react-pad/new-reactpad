@@ -118,7 +118,7 @@ export function ProjectParticipation({ project }: { project: Project; }) {
               <Button onClick={handlePurchase} className="w-full sm:w-auto">Buy</Button>
             </div>
             <p className="text-xs text-gray-500">
-              Gas estimate: 0.002 ETH. You will receive approximately 995 TKN.
+              Gas estimate: 0.002 REACT. You will receive approximately 995 TKN.
             </p>
           </>
         )}

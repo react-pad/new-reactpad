@@ -127,11 +127,11 @@ function PresaleCard({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <p className="text-gray-500 text-xs uppercase font-bold">Hard Cap</p>
-            <p className="font-bold">{formatEther(presale.hardCap)} ETH</p>
+            <p className="font-bold">{formatEther(presale.hardCap)} REACT</p>
           </div>
           <div>
             <p className="text-gray-500 text-xs uppercase font-bold">Total Raised</p>
-            <p className="font-bold">{formatEther(presale.totalRaised)} ETH</p>
+            <p className="font-bold">{formatEther(presale.totalRaised)} REACT</p>
           </div>
           <div>
             <p className="text-gray-500 text-xs uppercase font-bold">Progress</p>
