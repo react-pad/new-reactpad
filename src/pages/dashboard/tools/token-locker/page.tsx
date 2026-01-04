@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { erc20Abi, maxUint256, parseUnits, type Abi } from "viem";
 import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
-import { Lock, Clock, ArrowRight, ExternalLink, Plus, Eye, Timer, Unlock, Send } from "lucide-react";
+import { Lock, ExternalLink, Plus, Eye, Timer, Unlock, Send } from "lucide-react";
 
 interface LockData {
     id: bigint;
@@ -180,7 +180,13 @@ function LockCard({
     );
 }
 
-function CreateLockForm({ onSuccess }: { onSuccess: () => void }) {
+function CreateLockModal({ 
+    onClose, 
+    onSuccess 
+}: { 
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
     const [searchParams] = useSearchParams();
     const { address } = useAccount();
 
@@ -429,18 +435,20 @@ function CreateLockForm({ onSuccess }: { onSuccess: () => void }) {
             setDescription("");
             setHasApproved(false); // Reset approval state for next lock
             resetLock();
+            onClose(); // Close modal after success
         }
-    }, [isLockSuccess, lockHash, onSuccess, resetLock]);
+    }, [isLockSuccess, lockHash, onSuccess, resetLock, onClose]);
 
     return (
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-            <CardHeader className="border-b-2 border-black bg-[#7DF9FF] p-6">
-                <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
-                    <Plus className="w-5 h-5" />
-                    Create New Lock
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto p-4" onClick={onClose}>
+            <Card className="border-4 border-black shadow-[8px_8px_0_rgba(0,0,0,1)] max-w-2xl w-full p-0 gap-0" onClick={e => e.stopPropagation()}>
+                <CardHeader className="border-b-2 border-black bg-[#7DF9FF] p-6">
+                    <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        Create New Lock
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="token-address" className="font-bold uppercase text-xs">Token Address</Label>
                     <Input 
@@ -518,7 +526,8 @@ function CreateLockForm({ onSuccess }: { onSuccess: () => void }) {
                     </Button>
                 )}
             </CardContent>
-        </Card>
+            </Card>
+        </div>
     );
 }
 
@@ -679,7 +688,7 @@ function TransferLockModal({
 
 export default function TokenLockerPage() {
     const { address } = useAccount();
-    const [activeTab, setActiveTab] = useState<'my-locks' | 'create'>('my-locks');
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [extendingLockId, setExtendingLockId] = useState<bigint | null>(null);
     const [transferringLockId, setTransferringLockId] = useState<bigint | null>(null);
     const [unlockingId, setUnlockingId] = useState<bigint | null>(null);
@@ -753,73 +762,61 @@ export default function TokenLockerPage() {
                         <p className="text-3xl font-black text-green-600">{withdrawnLocks.length}</p>
                     </CardContent>
                 </Card>
-                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-                    <CardContent className="p-4 flex flex-col items-center justify-center">
-                        <Link 
-                            to="/locks"
-                            className="flex items-center gap-2 text-sm font-black uppercase hover:underline"
-                        >
-                            <Eye className="w-4 h-4" />
-                            View All Locks
-                            <ArrowRight className="w-4 h-4" />
-                        </Link>
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 bg-white hover:bg-gray-50 transition-colors"
+                >
+                    <CardContent className="p-4 text-center flex flex-col items-center justify-center h-full">
+                        <Plus className="w-6 h-6 mb-2 text-[#7DF9FF]" />
+                        <p className="text-xs text-gray-500 uppercase font-bold">Create Lock</p>
                     </CardContent>
-                </Card>
-                            </div>
-
-            {/* Tab Navigation */}
-            <div className="flex gap-2 mb-6">
-                <Button
-                    onClick={() => setActiveTab('my-locks')}
-                    className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-                        activeTab === 'my-locks' 
-                            ? 'bg-black text-white' 
-                            : 'bg-white text-black hover:bg-gray-100'
-                    }`}
-                >
-                    <Clock className="w-4 h-4 mr-2" />
-                    My Locks
-                </Button>
-                <Button
-                    onClick={() => setActiveTab('create')}
-                    className={`border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${
-                        activeTab === 'create' 
-                            ? 'bg-black text-white' 
-                            : 'bg-white text-black hover:bg-gray-100'
-                    }`}
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Lock
-                </Button>
-                            </div>
+                </button>
+            </div>
 
             {/* Content */}
-            {activeTab === 'my-locks' && (
-                <div>
-                    {isLoadingLocks ? (
-                        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]">
-                            <CardContent className="p-12 text-center">
-                                <p className="text-lg font-bold">Loading your locks...</p>
-                            </CardContent>
-                        </Card>
-                    ) : activeLocks.length === 0 ? (
-                        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]">
-                            <CardContent className="p-12 text-center space-y-4">
-                                <Lock className="w-16 h-16 mx-auto text-gray-400" />
-                                <p className="text-lg font-bold">No Active Locks</p>
-                                <p className="text-gray-600">Create your first token lock to get started.</p>
-                                <Button
-                                    onClick={() => setActiveTab('create')}
-                                    className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]"
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Create Lock
-                                </Button>
+            <div>
+                {isLoadingLocks ? (
+                    <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]">
+                        <CardContent className="p-12 text-center">
+                            <p className="text-lg font-bold">Loading your locks...</p>
                         </CardContent>
                     </Card>
-                    ) : (
+                ) : activeLocks.length === 0 ? (
+                    <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]">
+                        <CardContent className="p-12 text-center space-y-4">
+                            <Lock className="w-16 h-16 mx-auto text-gray-400" />
+                            <p className="text-lg font-bold">No Active Locks</p>
+                            <p className="text-gray-600">Create your first token lock to get started.</p>
+                            <Button
+                                onClick={() => setShowCreateModal(true)}
+                                className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Lock
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {activeLocks.map(lock => (
+                            <LockCard 
+                                key={lock.id.toString()}
+                                lock={lock}
+                                onUnlock={handleUnlock}
+                                onExtend={setExtendingLockId}
+                                onTransfer={setTransferringLockId}
+                                unlockingId={unlockingId}
+                                isOwner={lock.owner.toLowerCase() === address?.toLowerCase()}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {withdrawnLocks.length > 0 && (
+                    <div className="mt-8">
+                        <h3 className="text-xl font-black uppercase tracking-wider mb-4">Withdrawn Locks</h3>
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {activeLocks.map(lock => (
+                            {withdrawnLocks.map(lock => (
                                 <LockCard 
                                     key={lock.id.toString()}
                                     lock={lock}
@@ -831,36 +828,18 @@ export default function TokenLockerPage() {
                                 />
                             ))}
                         </div>
-                    )}
-
-                    {withdrawnLocks.length > 0 && (
-                        <div className="mt-8">
-                            <h3 className="text-xl font-black uppercase tracking-wider mb-4">Withdrawn Locks</h3>
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {withdrawnLocks.map(lock => (
-                                    <LockCard 
-                                        key={lock.id.toString()}
-                                        lock={lock}
-                                        onUnlock={handleUnlock}
-                                        onExtend={setExtendingLockId}
-                                        onTransfer={setTransferringLockId}
-                                        unlockingId={unlockingId}
-                                        isOwner={lock.owner.toLowerCase() === address?.toLowerCase()}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {activeTab === 'create' && (
-                <div className="max-w-xl">
-                    <CreateLockForm onSuccess={refetchLocks} />
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
 
             {/* Modals */}
+            {showCreateModal && (
+                <CreateLockModal 
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={refetchLocks}
+                />
+            )}
+
             {extendingLockId !== null && (
                 <ExtendLockModal 
                     lockId={extendingLockId}

@@ -195,7 +195,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
           address: addr,
           functionName,
         } as const))
-    );
+      );
   }, [addressesToFetch]);
 
   const { data: presaleDataResults, isLoading: isLoadingPresaleData } = useReadContracts({
@@ -618,10 +618,10 @@ export function useUserPresaleContribution(
       // Check if results are valid
       const hasValidResults = userDataResults.every(r => r.status === 'success');
       if (hasValidResults) {
-        return {
+      return {
           contribution: (userDataResults[0]?.result ?? cachedData?.contribution ?? 0n) as bigint,
           purchasedTokens: (userDataResults[1]?.result ?? cachedData?.purchasedTokens ?? 0n) as bigint,
-        };
+      };
       }
     }
 

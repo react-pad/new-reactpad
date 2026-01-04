@@ -9,11 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TokenFactory, TokenLocker } from "@/config";
-import { useEffect, useMemo, useState } from "react";
+import { TokenFactory, EXPLORER_URL } from "@/config";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { decodeEventLog, maxUint256, parseUnits, erc20Abi } from "viem";
-import { useAccount, useReadContract, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { decodeEventLog, parseUnits } from "viem";
+import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { Coins, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const TokenType = {
   Plain: 0,
@@ -27,7 +29,7 @@ type TokenType = typeof TokenType[keyof typeof TokenType];
 
 export default function CreateTokenPage() {
   const { address } = useAccount();
-  const { data: hash, writeContract, isPending, error } = useWriteContract();
+  const { data: hash, writeContract, isPending, error, reset } = useWriteContract();
 
   const [tokenType, setTokenType] = useState<TokenType>(TokenType.Plain);
   const [name, setName] = useState("");
@@ -38,31 +40,10 @@ export default function CreateTokenPage() {
   const [taxWallet, setTaxWallet] = useState("");
   const [taxBps, setTaxBps] = useState("0");
 
-  const [newlyCreatedTokenAddress, setNewlyCreatedTokenAddress] = useState<string | null>(null);
-  const [lockAmount, setLockAmount] = useState("");
-  const [lockDuration, setLockDuration] = useState("");
-  const [lockName, setLockName] = useState("Liquidity Lock");
-  const [lockDescription, setLockDescription] = useState("Initial token lock after creation");
+  const [createdTokenAddress, setCreatedTokenAddress] = useState<string | null>(null);
 
-  const { data: approveHash, writeContract: approve, isPending: isApproving } = useWriteContract();
-  const { data: lockHash, writeContract: lockTokens, isPending: isLocking } = useWriteContract();
-
-  const parsedLockAmount = useMemo(() => newlyCreatedTokenAddress && lockAmount ? parseUnits(lockAmount, parseInt(decimals)) : BigInt(0), [lockAmount, decimals, newlyCreatedTokenAddress]);
-
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    abi: erc20Abi,
-    address: newlyCreatedTokenAddress as `0x${string}`,
-    functionName: 'allowance',
-    args: [address!, TokenLocker.address as `0x${string}`],
-    query: {
-      enabled: !!address && !!newlyCreatedTokenAddress,
-    }
-  });
-
-  const needsApproval = useMemo(() => {
-    if (!allowance) return false;
-    return allowance < parsedLockAmount;
-  }, [allowance, parsedLockAmount]);
+  // Track processed hashes to prevent duplicate toasts
+  const processedHash = useRef<string | null>(null);
 
   useEffect(() => {
     if (address) {
@@ -71,7 +52,9 @@ export default function CreateTokenPage() {
   }, [address])
 
   const handleCreateToken = async () => {
-    setNewlyCreatedTokenAddress(null);
+    setCreatedTokenAddress(null);
+    processedHash.current = null;
+    
     const tokenParams = {
       name,
       symbol,
@@ -118,51 +101,23 @@ export default function CreateTokenPage() {
     });
   }
 
-  const handleApprove = () => {
-    if (!newlyCreatedTokenAddress) return;
-    approve({
-      address: newlyCreatedTokenAddress as `0x${string}`,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [TokenLocker.address as `0x${string}`, maxUint256]
-    })
-  }
-
-  const handleLock = () => {
-    if (!newlyCreatedTokenAddress) return;
-    const durationInSeconds = parseInt(lockDuration) * 24 * 60 * 60;
-    lockTokens({
-      address: TokenLocker.address as `0x${string}`,
-      abi: TokenLocker.abi,
-      functionName: "lockTokens",
-      args: [
-        newlyCreatedTokenAddress as `0x${string}`,
-        parsedLockAmount,
-        BigInt(durationInSeconds),
-        lockName,
-        lockDescription
-      ]
-    })
-  }
-
   const { isLoading: isConfirming, isSuccess: isConfirmed, data: createTokenReceipt } =
     useWaitForTransactionReceipt({
       hash,
     })
 
-  const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
-    hash: approveHash,
-  });
-
-  const { isLoading: isLockConfirming, isSuccess: isLockSuccess } = useWaitForTransactionReceipt({
-    hash: lockHash,
-  });
+  // Handle transaction states
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message);
+      reset();
+    }
+  }, [error, reset]);
 
   useEffect(() => {
-    if (isConfirming) {
-      toast.loading("Transaction is confirming...");
-    }
-    if (isConfirmed && createTokenReceipt) {
+    if (isConfirmed && createTokenReceipt && processedHash.current !== hash) {
+      processedHash.current = hash ?? null;
+      
       const event = createTokenReceipt.logs
         .map(log => {
           try {
@@ -179,145 +134,206 @@ export default function CreateTokenPage() {
 
       if (event) {
         const tokenAddress = (event.args as unknown as { token: `0x${string}` }).token;
-        setNewlyCreatedTokenAddress(tokenAddress);
+        setCreatedTokenAddress(tokenAddress);
         toast.success("Token created successfully!");
+        // Reset form
+        setName("");
+        setSymbol("");
+        setDecimals("18");
+        setInitialSupply("1000000");
+        setTaxWallet("");
+        setTaxBps("0");
+        reset();
       } else {
         toast.error("Could not find TokenCreated event in transaction logs.");
       }
     }
-    if (error) {
-      toast.error(error.message);
-    }
-  }, [isConfirming, isConfirmed, createTokenReceipt, error])
-
-  useEffect(() => {
-    if (isApproveConfirming) {
-      toast.loading("Approval confirming...");
-    }
-    if (isApproveSuccess) {
-      toast.success("Approval successful! You can now lock your tokens.");
-      refetchAllowance();
-    }
-  }, [isApproveConfirming, isApproveSuccess, refetchAllowance]);
-
-  useEffect(() => {
-    if (isLocking) {
-      toast.loading("Locking tokens...");
-    }
-    if (isLockSuccess) {
-      toast.success("Tokens locked successfully!");
-      setLockAmount("");
-      setLockDuration("");
-    }
-  }, [isLocking, isLockSuccess]);
+  }, [isConfirmed, createTokenReceipt, hash, reset]);
 
   return (
-    <div className="container mx-auto px-4 py-12 text-black">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Create a new Token</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="token-type">Token Type</Label>
-            <Select onValueChange={(value) => setTokenType(parseInt(value) as TokenType)} defaultValue={TokenType.Plain.toString()}>
-              <SelectTrigger id="token-type">
-                <SelectValue placeholder="Select token type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TokenType.Plain.toString()}>Plain</SelectItem>
-                <SelectItem value={TokenType.Mintable.toString()}>Mintable</SelectItem>
-                <SelectItem value={TokenType.Burnable.toString()}>Burnable</SelectItem>
-                <SelectItem value={TokenType.Taxable.toString()}>Taxable</SelectItem>
-                <SelectItem value={TokenType.NonMintable.toString()}>Non-Mintable</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="container mx-auto px-4 py-8 text-black">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="border-4 border-black bg-[#7DF9FF] p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]">
+          <h1 className="text-3xl md:text-4xl font-black uppercase tracking-wider flex items-center gap-3">
+            <Coins className="w-8 h-8" /> Create Token
+          </h1>
+          <p className="text-sm text-gray-700 mt-2">
+            Deploy your own ERC-20 token on the blockchain.
+          </p>
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="e.g. My Token" value={name} onChange={e => setName(e.target.value)} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="symbol">Symbol</Label>
-            <Input id="symbol" placeholder="e.g. MTK" value={symbol} onChange={e => setSymbol(e.target.value)} />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="decimals">Decimals</Label>
-              <Input id="decimals" type="number" placeholder="18" value={decimals} onChange={e => setDecimals(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="initial-supply">Initial Supply</Label>
-              <Input id="initial-supply" type="number" placeholder="1000000" value={initialSupply} onChange={e => setInitialSupply(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="initial-recipient">Initial Recipient</Label>
-            <Input id="initial-recipient" placeholder="e.g. 0x..." value={initialRecipient} onChange={e => setInitialRecipient(e.target.value)} />
-            <p className="text-xs text-gray-500">Defaults to your connected wallet address.</p>
-          </div>
-
-          {tokenType === TokenType.Taxable && (
-            <div className="space-y-4 pt-4 border-t">
-              <h3 className="font-semibold">Taxable Token Configuration</h3>
-              <div className="space-y-2">
-                <Label htmlFor="tax-wallet">Tax Wallet</Label>
-                <Input id="tax-wallet" placeholder="e.g. 0x..." value={taxWallet} onChange={e => setTaxWallet(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="tax-bps">Tax (in BPS, 1% = 100)</Label>
-                <Input id="tax-bps" type="number" placeholder="100" value={taxBps} onChange={e => setTaxBps(e.target.value)} />
-              </div>
-            </div>
-          )}
-
-          <Button onClick={handleCreateToken} disabled={isPending || isConfirming} className="w-full">
-            {isPending || isConfirming ? 'Creating Token...' : 'Create Token'}
-          </Button>
-
-        </CardContent>
-      </Card>
-
-      {newlyCreatedTokenAddress && (
-        <Card className="max-w-2xl mx-auto mt-8">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">Lock Your New Token</CardTitle>
+      {/* Success Message */}
+      {createdTokenAddress && (
+        <Card className="max-w-2xl mx-auto mb-8 border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+          <CardHeader className="border-b-2 border-black bg-[#90EE90] p-6">
+            <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
+              Token Created Successfully!
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>Token Address</Label>
-              <Input value={newlyCreatedTokenAddress} readOnly />
+          <CardContent className="p-6 space-y-4">
+            <div>
+              <p className="text-xs text-gray-500 uppercase font-bold mb-1">Token Address</p>
+              <code className="block bg-gray-100 p-3 border-2 border-black font-mono text-sm break-all">
+                {createdTokenAddress}
+              </code>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lock-amount">Amount to Lock</Label>
-              <Input id="lock-amount" type="number" placeholder="e.g. 100000" value={lockAmount} onChange={e => setLockAmount(e.target.value)} />
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a 
+                href={`${EXPLORER_URL}/address/${createdTokenAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1"
+              >
+                <Button className="w-full border-4 border-black bg-white text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-100">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View on Explorer
+                </Button>
+              </a>
+              <Link to={`/dashboard/tools/token-locker?token=${createdTokenAddress}`} className="flex-1">
+                <Button className="w-full border-4 border-black bg-[#FFFB8F] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#EDE972]">
+                  Lock Tokens
+                </Button>
+              </Link>
             </div>
+            <Button 
+              onClick={() => setCreatedTokenAddress(null)}
+              variant="outline"
+              className="w-full border-2 border-black"
+            >
+              Create Another Token
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Create Token Form */}
+      {!createdTokenAddress && (
+        <Card className="max-w-2xl mx-auto border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+          <CardHeader className="border-b-2 border-black bg-white p-6">
+            <CardTitle className="font-black uppercase tracking-wider">Token Details</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="lock-duration">Lock Duration (in days)</Label>
-              <Input id="lock-duration" type="number" placeholder="e.g. 365" value={lockDuration} onChange={e => setLockDuration(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lock-name">Lock Name / Reason</Label>
-              <Input id="lock-name" placeholder="e.g. Team Tokens Vesting" value={lockName} onChange={e => setLockName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lock-description">Description (Optional)</Label>
-              <Input id="lock-description" placeholder="e.g. Monthly vesting for core contributors" value={lockDescription} onChange={e => setLockDescription(e.target.value)} />
+              <Label htmlFor="token-type" className="font-bold uppercase text-xs">Token Type</Label>
+              <Select onValueChange={(value) => setTokenType(parseInt(value) as TokenType)} defaultValue={TokenType.Plain.toString()}>
+                <SelectTrigger id="token-type" className="border-2 border-black">
+                  <SelectValue placeholder="Select token type" />
+                </SelectTrigger>
+                <SelectContent className="border-2 border-black">
+                  <SelectItem value={TokenType.Plain.toString()}>Plain</SelectItem>
+                  <SelectItem value={TokenType.Mintable.toString()}>Mintable</SelectItem>
+                  <SelectItem value={TokenType.Burnable.toString()}>Burnable</SelectItem>
+                  <SelectItem value={TokenType.Taxable.toString()}>Taxable</SelectItem>
+                  <SelectItem value={TokenType.NonMintable.toString()}>Non-Mintable</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                {tokenType === TokenType.Plain && "A standard ERC-20 token with basic transfer functionality."}
+                {tokenType === TokenType.Mintable && "Allows the owner to mint new tokens after deployment."}
+                {tokenType === TokenType.Burnable && "Allows holders to burn (destroy) their tokens."}
+                {tokenType === TokenType.Taxable && "Applies a tax on transfers, sent to a designated wallet."}
+                {tokenType === TokenType.NonMintable && "Fixed supply token that cannot be minted after creation."}
+              </p>
             </div>
 
-            {needsApproval ? (
-              <Button onClick={handleApprove} disabled={isApproving || isApproveConfirming} className="w-full">
-                {isApproving || isApproveConfirming ? "Approving..." : "Approve Tokens for Locking"}
-              </Button>
-            ) : (
-              <Button onClick={handleLock} disabled={isLocking || isLockConfirming || !lockAmount || !lockDuration} className="w-full">
-                {isLocking || isLockConfirming ? "Locking..." : "Lock Tokens"}
-              </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="font-bold uppercase text-xs">Token Name</Label>
+                <Input 
+                  id="name" 
+                  placeholder="e.g. My Token" 
+                  value={name} 
+                  onChange={e => setName(e.target.value)} 
+                  className="border-2 border-black"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="symbol" className="font-bold uppercase text-xs">Symbol</Label>
+                <Input 
+                  id="symbol" 
+                  placeholder="e.g. MTK" 
+                  value={symbol} 
+                  onChange={e => setSymbol(e.target.value)} 
+                  className="border-2 border-black"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="decimals" className="font-bold uppercase text-xs">Decimals</Label>
+                <Input 
+                  id="decimals" 
+                  type="number" 
+                  placeholder="18" 
+                  value={decimals} 
+                  onChange={e => setDecimals(e.target.value)} 
+                  className="border-2 border-black"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="initial-supply" className="font-bold uppercase text-xs">Initial Supply</Label>
+                <Input 
+                  id="initial-supply" 
+                  type="number" 
+                  placeholder="1000000" 
+                  value={initialSupply} 
+                  onChange={e => setInitialSupply(e.target.value)} 
+                  className="border-2 border-black"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="initial-recipient" className="font-bold uppercase text-xs">Initial Recipient</Label>
+              <Input 
+                id="initial-recipient" 
+                placeholder="e.g. 0x..." 
+                value={initialRecipient} 
+                onChange={e => setInitialRecipient(e.target.value)} 
+                className="border-2 border-black font-mono text-sm"
+              />
+              <p className="text-xs text-gray-500">Defaults to your connected wallet address.</p>
+            </div>
+
+            {tokenType === TokenType.Taxable && (
+              <div className="space-y-4 pt-4 border-t-2 border-black">
+                <h3 className="font-black uppercase text-sm">Taxable Token Configuration</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="tax-wallet" className="font-bold uppercase text-xs">Tax Wallet</Label>
+                  <Input 
+                    id="tax-wallet" 
+                    placeholder="e.g. 0x..." 
+                    value={taxWallet} 
+                    onChange={e => setTaxWallet(e.target.value)} 
+                    className="border-2 border-black font-mono text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tax-bps" className="font-bold uppercase text-xs">Tax (in BPS, 1% = 100)</Label>
+                  <Input 
+                    id="tax-bps" 
+                    type="number" 
+                    placeholder="100" 
+                    value={taxBps} 
+                    onChange={e => setTaxBps(e.target.value)} 
+                    className="border-2 border-black"
+                  />
+                </div>
+              </div>
             )}
+
+            <Button 
+              onClick={handleCreateToken} 
+              disabled={isPending || isConfirming || !name || !symbol} 
+              className="w-full border-4 border-black bg-[#FF00F5] text-black font-black uppercase tracking-wider shadow-[4px_4px_0_rgba(0,0,0,1)] hover:bg-[#E000DD] hover:shadow-[6px_6px_0_rgba(0,0,0,1)] transition-all"
+            >
+              {isPending ? 'Confirm in Wallet...' : isConfirming ? 'Creating Token...' : 'Create Token'}
+            </Button>
           </CardContent>
         </Card>
       )}

@@ -208,8 +208,8 @@ export default function UserDashboardPage() {
   if (!isConnected) {
     return (
       <div className="container mx-auto px-4 py-12 text-black">
-        <div className="border-b-4 border-black bg-[#FFFB8F] p-6 shadow-[4px_4px_0_rgba(0,0,0,1)] mb-8">
-          <h1 className="text-4xl font-black uppercase tracking-wider">Your Dashboard</h1>
+        <div className="border-b-4 border-black bg-[#FFFB8F] p-4 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,1)] mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-wider">Your Dashboard</h1>
         </div>
         <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]">
           <CardContent className="py-12 text-center">
@@ -225,19 +225,19 @@ export default function UserDashboardPage() {
   return (
     <div className="container mx-auto px-4 py-8 text-black">
       {/* Header */}
-      <div className="mb-8">
-        <div className="border-b-4 border-black bg-[#FFFB8F] p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="text-4xl font-black uppercase tracking-wider">Your Dashboard</h1>
-              <p className="text-sm font-mono mt-2">
-                {address?.slice(0, 10)}...{address?.slice(-8)}
+      <div className="mb-6 sm:mb-8">
+        <div className="border-b-4 border-black bg-[#FFFB8F] p-4 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-wider">Your Dashboard</h1>
+              <p className="text-xs sm:text-sm font-mono mt-1 sm:mt-2 truncate">
+                {address?.slice(0, 6)}...{address?.slice(-4)}
               </p>
             </div>
           <Button
               onClick={handleRefresh}
               disabled={isLoading || isLoadingPresales || isLoadingLocks}
-              className="border-4 border-black bg-white text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-100"
+              className="hidden sm:flex border-4 border-black bg-white text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-100"
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading || isLoadingPresales || isLoadingLocks ? 'animate-spin' : ''}`} />
             Refresh

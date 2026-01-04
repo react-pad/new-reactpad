@@ -568,11 +568,11 @@ export default function CreatePresalePage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <CreatePresaleForm
-            formData={formData}
-            setFormData={setFormData}
-            onPresaleCreated={(hash) => setCreationHash(hash)}
-          />
+            <CreatePresaleForm
+              formData={formData}
+              setFormData={setFormData}
+              onPresaleCreated={(hash) => setCreationHash(hash)}
+            />
         </CardContent>
       </Card>
     </div>

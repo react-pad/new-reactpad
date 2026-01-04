@@ -9,7 +9,6 @@ import ManagePresalePage from "./pages/dashboard/presales/manage/page";
 import AirdropPage from "./pages/dashboard/tools/airdrop/page";
 import TokenLockerPage from "./pages/dashboard/tools/token-locker/page";
 import UserDashboardPage from "./pages/dashboard/user/page";
-import LocksPage from "./pages/locks/page";
 import LockDetailPage from "./pages/locks/[id]/page";
 import MarketDetailPage from "./pages/markets/[id]/page";
 import MarketsPage from "./pages/markets/page";
@@ -45,7 +44,6 @@ function App() {
             <Route path="/nfts/:id" element={<NFTDetailPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/projects/:id" element={<ProjectDetailPage />} />
-            <Route path="/locks" element={<LocksPage />} />
             <Route path="/locks/:id" element={<LockDetailPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/presales" element={<AdminPresales />} />

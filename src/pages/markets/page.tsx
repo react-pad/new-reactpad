@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState } from "react";
@@ -28,9 +27,10 @@ export default function MarketsPage() {
     }
   });
 
-  const filteredMarkets = sortedMarkets.filter(market => {
+  const filteredMarkets = sortedMarkets.filter((market) => {
     if (!market) return false;
-    const matchesSearch = market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch =
+      market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       market.symbol.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
@@ -38,11 +38,13 @@ export default function MarketsPage() {
   return (
     <div className="bg-white min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 py-12 sm:py-20 max-w-7xl">
-        <div className="mb-12 sm:mb-20 text-right lg:text-left">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase leading-none mb-6 tracking-tight">
-            Live<br />Markets
+        <div className="mb-8 sm:mb-12 md:mb-20 text-center lg:text-left">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-8xl font-black uppercase leading-none mb-4 sm:mb-6 tracking-tight">
+            Live
+            <br />
+            Markets
           </h1>
-          <p className="text-lg sm:text-xl md:text-2xl font-light max-w-2xl ml-auto lg:ml-0">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl font-light max-w-2xl mx-auto lg:mx-0">
             Discover and trade the latest tokens on the Reactive network.
           </p>
         </div>
@@ -58,14 +60,15 @@ export default function MarketsPage() {
             />
           </div>
           <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-2">
-            {filterOptions.map(filter => (
+            {filterOptions.map((filter) => (
               <button
                 key={filter.value}
                 onClick={() => setActiveFilter(filter.value)}
-                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-2 border-black transition-all whitespace-nowrap ${activeFilter === filter.value
-                  ? "bg-black text-white"
-                  : "bg-white text-black hover:bg-black hover:text-white"
-                  }`}
+                className={`px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold uppercase tracking-wider border-2 border-black transition-all whitespace-nowrap ${
+                  activeFilter === filter.value
+                    ? "bg-black text-white"
+                    : "bg-white text-black hover:bg-black hover:text-white"
+                }`}
               >
                 {filter.label}
               </button>
@@ -77,9 +80,10 @@ export default function MarketsPage() {
           <div className="text-center">Loading markets...</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMarkets.map((market) => (
-              market && <MarketCard market={market} key={market.id} />
-            ))}
+            {filteredMarkets.map(
+              (market) =>
+                market && <MarketCard market={market} key={market.id} />
+            )}
           </div>
         )}
       </div>

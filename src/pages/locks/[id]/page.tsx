@@ -140,10 +140,10 @@ export default function LockDetailPage() {
                         <XCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-red-500" />
                         <p className="text-lg sm:text-xl font-black">Lock Not Found</p>
                         <p className="text-gray-600 text-sm sm:text-base">Lock #{id} does not exist or has not been created yet.</p>
-                        <Link to="/locks">
+                        <Link to="/dashboard/user">
                             <Button className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]">
                                 <ArrowLeft className="w-4 h-4 mr-2" />
-                                Back to Explorer
+                                Back to Dashboard
                             </Button>
                         </Link>
                     </CardContent>
@@ -156,11 +156,11 @@ export default function LockDetailPage() {
         <div className="container mx-auto px-4 py-6 sm:py-8 text-black">
             {/* Back Link */}
             <Link 
-                to="/locks"
+                to="/dashboard/user"
                 className="inline-flex items-center gap-2 text-gray-600 hover:text-black mb-4 sm:mb-6 font-bold text-sm sm:text-base"
             >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Lock Explorer
+                Back to Dashboard
             </Link>
 
             {/* Header */}

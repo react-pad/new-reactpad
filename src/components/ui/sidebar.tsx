@@ -2,7 +2,6 @@ import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
   LayoutDashboard,
-  Lock,
   Menu,
   Pencil,
   Rocket,
@@ -20,7 +19,6 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard/user", icon: LayoutDashboard },
   { name: "Launchpad", href: "/projects", icon: Rocket },
   { name: "Markets", href: "/markets", icon: Coins },
-  { name: "Lock Explorer", href: "/locks", icon: Lock },
 ];
 
 // Re-usable component for sidebar content

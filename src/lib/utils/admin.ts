@@ -113,7 +113,7 @@ export function useIsAdminLegacy(_address: string | undefined): boolean {
 export function requireAdmin(_address: string | undefined): void {
   console.warn('requireAdmin() is deprecated. Use on-chain admin verification instead.');
   throw new Error('Unauthorized: Admin access requires on-chain verification');
-}
+  }
 
 /**
  * Legacy function - deprecated

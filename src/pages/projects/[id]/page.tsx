@@ -146,15 +146,15 @@ export default function ProjectDetailPage() {
               <p className="font-bold">Status</p>
               <Badge
                 className={`capitalize ${presale.status === "live"
-                  ? "bg-green-500"
+                    ? "bg-green-500"
                   : presale.status === "finalized"
                     ? "bg-blue-500"
                     : presale.status === "cancelled"
                       ? "bg-red-500"
                       : presale.status === "upcoming"
                         ? "bg-yellow-500"
-                        : "bg-gray-500"
-                  }`}
+                    : "bg-gray-500"
+                }`}
               >
                 {presale.claimEnabled
                   ? "Finalized - Claim Open"

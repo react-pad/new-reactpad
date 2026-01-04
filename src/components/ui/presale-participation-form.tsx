@@ -463,19 +463,19 @@ export function PresaleParticipationForm({
           </div>
 
           {/* Amount Input */}
-          <div>
-            <label htmlFor="amount" className="mb-1 block font-medium">
-              Amount to Contribute ({presaleData.paymentTokenSymbol})
-            </label>
-            <Input
-              id="amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.0"
-              className="w-full"
-            />
-          </div>
+      <div>
+        <label htmlFor="amount" className="mb-1 block font-medium">
+          Amount to Contribute ({presaleData.paymentTokenSymbol})
+        </label>
+        <Input
+          id="amount"
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.0"
+          className="w-full"
+        />
+      </div>
 
           {/* Expected Tokens */}
           {expectedTokens > 0n && (
@@ -490,30 +490,30 @@ export function PresaleParticipationForm({
               <p className="text-xs text-gray-500 mt-1">
                 Rate: {Number(presaleData.rate) / 100}{" "}
                 {presaleData.saleTokenSymbol} per{" "}
-                {presaleData.paymentTokenSymbol}
-              </p>
-            </div>
+          {presaleData.paymentTokenSymbol}
+        </p>
+      </div>
           )}
 
           {/* Contribute Button */}
-          <Button
-            type={needsApproval ? "button" : "submit"}
-            onClick={needsApproval ? approve : undefined}
-            disabled={
-              isPending ||
-              isConfirming ||
-              isApproving ||
+      <Button
+        type={needsApproval ? "button" : "submit"}
+        onClick={needsApproval ? approve : undefined}
+        disabled={
+          isPending ||
+          isConfirming ||
+          isApproving ||
               isContributionDisabled ||
-              !whitelistGateOpen ||
-              (needsApproval ? false : !canContribute)
-            }
+          !whitelistGateOpen ||
+          (needsApproval ? false : !canContribute)
+        }
             className={`w-full border-4 border-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] ${isContributionDisabled
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-[#7DF9FF] text-black"
               }`}
-          >
-            {getButtonText()}
-          </Button>
+      >
+        {getButtonText()}
+      </Button>
         </>
       )}
 
