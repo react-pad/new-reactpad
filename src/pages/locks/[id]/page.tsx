@@ -7,7 +7,7 @@ import { useParams, Link } from "react-router-dom";
 import { useMemo } from "react";
 import { erc20Abi, formatUnits, type Abi } from "viem";
 import { useReadContract } from "wagmi";
-import { Lock, ExternalLink, ArrowLeft, User, Coins, Timer, CheckCircle2, XCircle } from "lucide-react";
+import { Lock, Clock, ExternalLink, ArrowLeft, User, Coins, Calendar, Timer, CheckCircle2, XCircle } from "lucide-react";
 
 interface LockInfo {
     token: `0x${string}`;
@@ -276,6 +276,63 @@ export default function LockDetailPage() {
                     </CardHeader>
                     <CardContent className="p-4 sm:p-6">
                         <LockProgressBar lockDate={lock.lockDate} unlockDate={lock.unlockDate} />
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Timeline - Only for withdrawn locks */}
+            {lock.withdrawn && (
+                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 mt-4 sm:mt-6">
+                    <CardHeader className="border-b-2 border-black bg-white p-3 sm:p-4">
+                        <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2 text-sm sm:text-base">
+                            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+                            Timeline
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                        <div className="relative">
+                            {/* Timeline line */}
+                            <div className="absolute left-[14px] sm:left-4 top-0 bottom-0 w-0.5 sm:w-1 bg-black"></div>
+                            
+                            {/* Lock Created */}
+                            <div className="relative flex items-start gap-3 sm:gap-4 pb-6 sm:pb-8">
+                                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#7DF9FF] border-2 sm:border-4 border-black flex items-center justify-center z-10 flex-shrink-0">
+                                    <Lock className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </div>
+                                <div className="pt-0.5">
+                                    <p className="font-black uppercase text-sm sm:text-base">Lock Created</p>
+                                    <p className="text-gray-600 text-xs sm:text-sm">
+                                        {format(new Date(Number(lock.lockDate) * 1000), 'MMM d, yyyy \'at\' HH:mm')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Unlock Date */}
+                            <div className="relative flex items-start gap-3 sm:gap-4 pb-6 sm:pb-8">
+                                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#90EE90] border-2 sm:border-4 border-black flex items-center justify-center z-10 flex-shrink-0">
+                                    <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                                </div>
+                                <div className="pt-0.5">
+                                    <p className="font-black uppercase text-sm sm:text-base">Unlock Date</p>
+                                    <p className="text-gray-600 text-xs sm:text-sm">
+                                        {format(new Date(Number(lock.unlockDate) * 1000), 'MMM d, yyyy \'at\' HH:mm')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Withdrawn */}
+                            <div className="relative flex items-start gap-3 sm:gap-4">
+                                <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-gray-400 border-2 sm:border-4 border-black flex items-center justify-center z-10 flex-shrink-0">
+                                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                </div>
+                                <div className="pt-0.5">
+                                    <p className="font-black uppercase text-sm sm:text-base">Tokens Withdrawn</p>
+                                    <p className="text-gray-600 text-xs sm:text-sm">
+                                        The locked tokens have been claimed by the owner.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             )}
