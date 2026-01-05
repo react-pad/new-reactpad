@@ -16,7 +16,7 @@ import type { Address } from "viem";
 import { erc20Abi, formatUnits } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
-function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
+function TokenInfo({ tokenAddress, onPresaleClick }: { tokenAddress: `0x${string}`; onPresaleClick: () => void }) {
   const { address } = useAccount();
   const { data: symbol, isLoading: isLoadingSymbol } = useReadContract({
     abi: erc20Abi,
@@ -62,17 +62,21 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
             Airdrop</Link>
         </Button>
         {!isLoadingWhitelist && (
-          <Button size="sm" asChild className="border-2 border-black bg-[#7DF9FF] text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#6AD8E8]">
-            <Link
-              to={
-                isWhitelisted
-                  ? `/dashboard/create/presale?token=${tokenAddress}`
-                  : `/dashboard/create/project`
-              }
+          isWhitelisted ? (
+            <Button size="sm" asChild className="border-2 border-black bg-[#7DF9FF] text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#6AD8E8]">
+              <Link to={`/dashboard/create/presale?token=${tokenAddress}`}>
+                <FileText className="w-3 h-3 mr-1" /> Presale
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={onPresaleClick}
+              className="border-2 border-black bg-[#7DF9FF] text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#6AD8E8]"
             >
               <FileText className="w-3 h-3 mr-1" /> Presale
-            </Link>
-          </Button>
+            </Button>
+          )
         )}
       </div>
     </div>
@@ -271,11 +275,13 @@ export default function UserDashboardPage() {
             <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2 text-black">
               My Created Tokens
             </CardTitle>
-            <Link to="/dashboard/create/token">
-              <Button size="sm" className="border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)]">
-                <Plus className="w-3 h-3 mr-1" /> New Token
-              </Button>
-            </Link>
+            {tokenList.length > 0 && (
+              <Link to="/dashboard/create/token">
+                <Button size="sm" className="border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)]">
+                  <Plus className="w-3 h-3 mr-1" /> New Token
+                </Button>
+              </Link>
+            )}
           </div>
         </CardHeader>
         <CardContent className="p-4">
@@ -290,7 +296,7 @@ export default function UserDashboardPage() {
           ) : tokenList.length > 0 ? (
             <div className="space-y-3">
               {paginatedTokens.map((token) => (
-                <TokenInfo key={token} tokenAddress={token} />
+                <TokenInfo key={token} tokenAddress={token} onPresaleClick={() => setIsModalOpen(true)} />
               ))}
               {/* Pagination Controls */}
               {totalTokenPages > 1 && (
@@ -323,7 +329,7 @@ export default function UserDashboardPage() {
             <div className="text-center py-12">
               <p className="text-gray-600 mb-4 text-base sm:text-lg font-medium">You have not created any tokens yet.</p>
               <Link to="/dashboard/create/token">
-                <Button className="border-4 border-black bg-[#000000] text-white font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-800">
+                <Button className="border-4 border-black bg-[#22C55E] text-white font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#16A34A]">
                   <Plus className="w-4 h-4 mr-1" /> Create Your First Token
                 </Button>
               </Link>
