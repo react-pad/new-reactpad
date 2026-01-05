@@ -134,15 +134,15 @@ function LockCard({
                 )}
 
                 {isOwner && !isWithdrawn && (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                         {isUnlocked ? (
                             <Button 
                                 onClick={() => onUnlock(lock.id)} 
                                 disabled={unlockingId === lock.id}
-                                className="col-span-3 border-4 border-black bg-[#90EE90] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#7ADF7A]"
+                                className="col-span-2 border-4 border-black bg-[#90EE90] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#7ADF7A]"
                             >
                                 <Unlock className="w-4 h-4 mr-2" />
-                                        {unlockingId === lock.id ? "Withdrawing..." : "Withdraw"}
+                                {unlockingId === lock.id ? "Withdrawing..." : "Withdraw"}
                             </Button>
                         ) : (
                             <>
@@ -151,7 +151,7 @@ function LockCard({
                                     variant="outline"
                                     className="border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:bg-gray-100"
                                 >
-                                    <Timer className="w-3 h-3 mr-1" />
+                                    <Timer className="w-4 h-4 mr-2" />
                                     Extend
                                 </Button>
                                 <Button 
@@ -159,18 +159,9 @@ function LockCard({
                                     variant="outline"
                                     className="border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:bg-gray-100"
                                 >
-                                    <Send className="w-3 h-3 mr-1" />
+                                    <Send className="w-4 h-4 mr-2" />
                                     Transfer
                                 </Button>
-                                <Link to={`/locks/${lock.id.toString()}`}>
-                                    <Button 
-                                        variant="outline"
-                                        className="w-full border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:bg-gray-100"
-                                    >
-                                        <Eye className="w-3 h-3 mr-1" />
-                                        View
-                                    </Button>
-                                </Link>
                             </>
                         )}
                     </div>
@@ -698,12 +689,6 @@ export default function TokenLockerPage() {
 
     const { locks: userLocks, isLoading: isLoadingLocks, refetch: refetchLocks } = useAllLocks();
 
-    const { data: totalLocksCount } = useReadContract({
-        address: TokenLocker.address,
-        abi: TokenLocker.abi as Abi,
-        functionName: 'totalLocks',
-    });
-
     const handleUnlock = (lockId: bigint) => {
         setUnlockingId(lockId);
         unlockTokens({
@@ -731,46 +716,26 @@ export default function TokenLockerPage() {
     return (
         <div className="container mx-auto px-4 py-8 text-black">
             {/* Header */}
-            <div className="mb-8">
-                <div className="border-b-4 border-black bg-[#7DF9FF] p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]">
-                    <h1 className="text-4xl font-black uppercase tracking-wider flex items-center gap-3">
-                        <Lock className="w-8 h-8" /> Token Locker
-                    </h1>
-                    <p className="text-sm text-gray-700 mt-2">
-                        Lock your tokens for a specified period. Build trust with your community through transparent, verifiable locks.
-                    </p>
-                            </div>
-                            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-                    <CardContent className="p-4 text-center">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Total Locks</p>
-                        <p className="text-3xl font-black">{totalLocksCount?.toString() ?? '...'}</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-                    <CardContent className="p-4 text-center">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Your Active Locks</p>
-                        <p className="text-3xl font-black text-yellow-600">{activeLocks.length}</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-                    <CardContent className="p-4 text-center">
-                        <p className="text-xs text-gray-500 uppercase font-bold">Withdrawn</p>
-                        <p className="text-3xl font-black text-green-600">{withdrawnLocks.length}</p>
-                    </CardContent>
-                </Card>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 bg-white hover:bg-gray-50 transition-colors"
-                >
-                    <CardContent className="p-4 text-center flex flex-col items-center justify-center h-full">
-                        <Plus className="w-6 h-6 mb-2 text-[#7DF9FF]" />
-                        <p className="text-xs text-gray-500 uppercase font-bold">Create Lock</p>
-                    </CardContent>
-                </button>
+            <div className="mb-6 sm:mb-8">
+                <div className="border-b-4 border-black bg-[#7DF9FF] p-4 sm:p-6 shadow-[4px_4px_0_rgba(0,0,0,1)]">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-wider flex items-center gap-3">
+                                <Lock className="w-6 h-6 sm:w-8 sm:h-8" /> Token Locker
+                            </h1>
+                            <p className="text-xs sm:text-sm text-gray-700 mt-2">
+                                Lock your tokens for a specified period. Build trust with your community.
+                            </p>
+                        </div>
+                        <Button
+                            onClick={() => setShowCreateModal(true)}
+                            className="border-4 border-black bg-[#FFFFFF] text-black font-black uppercase tracking-wider shadow-[4px_4px_0_rgba(0,0,0,1)] hover:bg-gray-100 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Lock
+                        </Button>
+                    </div>
+                </div>
             </div>
 
             {/* Content */}
