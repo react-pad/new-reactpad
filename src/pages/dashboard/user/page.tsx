@@ -9,7 +9,7 @@ import { useUserTokens } from "@/lib/hooks/useUserTokens";
 import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, ChevronLeft, ChevronRight, Coins, ExternalLink, FileText, Lock, Plus, RefreshCw, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, FileText, Lock, Plus, RefreshCw, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Address } from "viem";
@@ -321,8 +321,7 @@ export default function UserDashboardPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Coins className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-600 mb-4">You have not created any tokens yet.</p>
+              <p className="text-gray-600 mb-4 text-base sm:text-lg font-medium">You have not created any tokens yet.</p>
               <Link to="/dashboard/create/token">
                 <Button className="border-4 border-black bg-[#000000] text-white font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-800">
                   <Plus className="w-4 h-4 mr-1" /> Create Your First Token
@@ -438,8 +437,7 @@ export default function UserDashboardPage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <Lock className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-600 mb-4 text-sm">No active locks</p>
+                <p className="text-gray-600 mb-4 text-base sm:text-lg font-medium">No active locks</p>
                 <Link to="/dashboard/tools/token-locker">
                   <Button className="border-4 border-black bg-[#FFFB8F] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#EDE972]">
                     <Lock className="w-4 h-4 mr-1" /> Create Lock
