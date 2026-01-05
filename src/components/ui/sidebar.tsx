@@ -1,19 +1,19 @@
+import { useIsAdmin } from "@/lib/utils/admin";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
   LayoutDashboard,
   Menu,
-  Pencil,
+  Plus,
   Rocket,
   Shield,
   WalletMinimal
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import type { Address } from "viem";
 import { reactiveTestnet } from "viem/chains";
 import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
-import { useIsAdmin } from "@/lib/utils/admin";
-import type { Address } from "viem";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard/user", icon: LayoutDashboard },
@@ -167,7 +167,7 @@ const SidebarContent = () => {
               : "bg-[#FF00F5] text-black hover:bg-[#FF4911] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px]"
               }`}
           >
-            <Pencil className="w-5 h-5 mr-2" strokeWidth={3} />
+            <Plus className="w-5 h-5 mr-2" />
             CREATE
           </Link>
         </div>

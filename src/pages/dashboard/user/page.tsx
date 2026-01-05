@@ -1,20 +1,20 @@
 "use client"
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogOverlay, DialogPortal } from "@/components/ui/dialog";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { useUserTokens } from "@/lib/hooks/useUserTokens";
-import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
-import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
-import { useAllLocks } from "@/lib/hooks/useAllLocks";
-import { Link, useNavigate } from "react-router-dom";
-import { erc20Abi, formatUnits } from "viem";
-import { useReadContract, useAccount } from "wagmi";
-import { RefreshCw, ExternalLink, X, Coins, Rocket, Lock, Plus, ArrowRight } from "lucide-react";
-import type { Address } from "viem";
+import { Dialog, DialogDescription, DialogFooter, DialogHeader, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { useAllLocks } from "@/lib/hooks/useAllLocks";
+import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
+import { useUserTokens } from "@/lib/hooks/useUserTokens";
+import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { formatDistanceToNow } from "date-fns";
+import { ArrowRight, ChevronLeft, ChevronRight, Coins, ExternalLink, FileText, Lock, Plus, RefreshCw, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import type { Address } from "viem";
+import { erc20Abi, formatUnits } from "viem";
+import { useAccount, useReadContract } from "wagmi";
 
 function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
   const { address } = useAccount();
@@ -54,11 +54,12 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
       <div className="flex flex-wrap gap-2 flex-shrink-0">
         <Button variant="outline" size="sm" asChild className="border-2 border-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)]">
           <Link to={`/dashboard/tools/token-locker?token=${tokenAddress}`}>
-            <Lock className="w-3 h-3 mr-1" /> Lock
+            Lock
           </Link>
         </Button>
         <Button variant="outline" size="sm" asChild className="border-2 border-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)]">
-          <Link to={`/dashboard/tools/airdrop?token=${tokenAddress}`}>Airdrop</Link>
+          <Link to={`/dashboard/tools/airdrop?token=${tokenAddress}`}>
+            Airdrop</Link>
         </Button>
         {!isLoadingWhitelist && (
           <Button size="sm" asChild className="border-2 border-black bg-[#7DF9FF] text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-[#6AD8E8]">
@@ -69,15 +70,14 @@ function TokenInfo({ tokenAddress }: { tokenAddress: `0x${string}` }) {
                   : `/dashboard/create/project`
               }
             >
-              <Rocket className="w-3 h-3 mr-1" /> Presale
+              <FileText className="w-3 h-3 mr-1" /> Presale
             </Link>
-        </Button>
+          </Button>
         )}
       </div>
     </div>
   )
 }
-
 
 function PresaleInfo({ presaleAddress }: { presaleAddress: Address }) {
   const { presales, isLoading } = useLaunchpadPresales('all', false);
@@ -146,7 +146,16 @@ function PresaleInfo({ presaleAddress }: { presaleAddress: Address }) {
 }
 
 function LockPreviewCard({ lock }: { lock: { id: bigint; token: `0x${string}`; amount: bigint; lockDate: bigint; unlockDate: bigint; withdrawn: boolean; name: string; tokenSymbol?: string; formattedAmount: string } }) {
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const lockTimestamp = Number(lock.lockDate) * 1000;
   const unlockTimestamp = Number(lock.unlockDate) * 1000;
   const totalDuration = unlockTimestamp - lockTimestamp;
@@ -158,7 +167,6 @@ function LockPreviewCard({ lock }: { lock: { id: bigint; token: `0x${string}`; a
     <div className="p-4 border-2 border-black bg-white shadow-[2px_2px_0_rgba(0,0,0,1)]">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Lock className="w-4 h-4" />
           <span className="font-black text-sm uppercase">{lock.name || `Lock #${lock.id.toString()}`}</span>
         </div>
         <span className={`px-2 py-0.5 text-xs font-bold uppercase ${lock.withdrawn ? 'bg-gray-400 text-white' : isExpired ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'}`}>
@@ -191,14 +199,24 @@ export default function UserDashboardPage() {
   const { presales, isLoading: isLoadingPresales } = useLaunchpadPresales('all', false);
   const { locks: userLocks, isLoading: isLoadingLocks, refetch: refetchLocks } = useAllLocks();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tokenPage, setTokenPage] = useState(0);
   const navigate = useNavigate();
+
+  // Pagination for tokens (newest first)
+  const TOKENS_PER_PAGE = 3;
+  const tokenList = [...((createdTokens as `0x${string}`[]) || [])].reverse();
+  const totalTokenPages = Math.ceil(tokenList.length / TOKENS_PER_PAGE);
+  const paginatedTokens = tokenList.slice(
+    tokenPage * TOKENS_PER_PAGE,
+    (tokenPage + 1) * TOKENS_PER_PAGE
+  );
 
   // Filter presales owned by the user
   const myPresales = presales?.filter(
     (p) => address && p.owner?.toLowerCase() === address.toLowerCase()
   ) || [];
 
-  const activeLocks = userLocks?.filter(l => !l.withdrawn) || [];
+  const activeLocks = [...(userLocks?.filter(l => !l.withdrawn) || [])].reverse();
 
   const handleRefresh = () => {
     refetch();
@@ -234,57 +252,92 @@ export default function UserDashboardPage() {
                 {address?.slice(0, 6)}...{address?.slice(-4)}
               </p>
             </div>
-          <Button
+            <Button
               onClick={handleRefresh}
               disabled={isLoading || isLoadingPresales || isLoadingLocks}
               className="hidden sm:flex border-4 border-black bg-white text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-100"
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading || isLoadingPresales || isLoadingLocks ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+              Refresh
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-          <CardContent className="p-4 text-center">
-            <Coins className="w-6 h-6 mx-auto mb-2 text-[#000000]" />
-            <p className="text-xs text-gray-500 uppercase font-bold">Tokens Created</p>
-            <p className="text-3xl font-black">{createdTokens?.length ?? 0}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-          <CardContent className="p-4 text-center">
-            <Rocket className="w-6 h-6 mx-auto mb-2 text-[#7DF9FF]" />
-            <p className="text-xs text-gray-500 uppercase font-bold">My Presales</p>
-            <p className="text-3xl font-black">{myPresales.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-          <CardContent className="p-4 text-center">
-            <Lock className="w-6 h-6 mx-auto mb-2 text-[#CA8A04]" />
-            <p className="text-xs text-gray-500 uppercase font-bold">Active Locks</p>
-            <p className="text-3xl font-black">{activeLocks.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] py-0 gap-0">
-          <Link to="/dashboard/create" className="block w-full h-full">
-            <Button className="w-full h-full min-h-[104px] rounded-none border-0 bg-[#FF00F5] text-black font-black uppercase tracking-wider shadow-none hover:bg-[#FF4911] flex flex-col items-center justify-center gap-2 !p-0 !m-0 !h-full">
-              <Plus className="w-6 h-6" />
-              <span>Create</span>
-            </Button>
-          </Link>
-        </Card>
-      </div>
+      {/* My Created Tokens - Full Width */}
+      <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 mt-2 mb-6">
+        <CardHeader className="border-b-2 border-black bg-[#ffffff] p-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2 text-black">
+              My Created Tokens
+            </CardTitle>
+            <Link to="/dashboard/create/token">
+              <Button size="sm" className="border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)]">
+                <Plus className="w-3 h-3 mr-1" /> New Token
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              <div className="animate-pulse">
+                <div className="h-16 bg-gray-200 rounded mb-3"></div>
+                <div className="h-16 bg-gray-200 rounded mb-3"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          ) : tokenList.length > 0 ? (
+            <div className="space-y-3">
+              {paginatedTokens.map((token) => (
+                <TokenInfo key={token} tokenAddress={token} />
+              ))}
+              {/* Pagination Controls */}
+              {totalTokenPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t-2 border-gray-200">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTokenPage(p => Math.max(0, p - 1))}
+                    disabled={tokenPage === 0}
+                    className="border-2 border-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] disabled:opacity-50 disabled:shadow-none"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                  </Button>
+                  <span className="text-sm font-bold">
+                    Page {tokenPage + 1} of {totalTokenPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTokenPage(p => Math.min(totalTokenPages - 1, p + 1))}
+                    disabled={tokenPage >= totalTokenPages - 1}
+                    className="border-2 border-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] disabled:opacity-50 disabled:shadow-none"
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Coins className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-600 mb-4">You have not created any tokens yet.</p>
+              <Link to="/dashboard/create/token">
+                <Button className="border-4 border-black bg-[#000000] text-white font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-800">
+                  <Plus className="w-4 h-4 mr-1" /> Create Your First Token
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* My Presales */}
         <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
           <CardHeader className="border-b-2 border-black bg-[#7DF9FF] p-4">
             <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
-              <Rocket className="w-5 h-5" />
               My Presales
             </CardTitle>
           </CardHeader>
@@ -311,8 +364,7 @@ export default function UserDashboardPage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <Rocket className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-600 mb-4 text-sm">No presales yet</p>
+                <p className="text-gray-600 mb-4 text-base sm:text-lg font-medium">No presales yet</p>
                 <Button onClick={() => setIsModalOpen(true)} className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]">
                   Create Presale
                 </Button>
@@ -354,7 +406,6 @@ export default function UserDashboardPage() {
           <CardHeader className="border-b-2 border-black bg-[#FFFB8F] p-4">
             <div className="flex items-center justify-between">
               <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2">
-                <Lock className="w-5 h-5" />
                 My Token Locks
               </CardTitle>
               <Link to="/dashboard/tools/token-locker">
@@ -398,86 +449,6 @@ export default function UserDashboardPage() {
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* My Created Tokens - Full Width */}
-      <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 mt-6">
-        <CardHeader className="border-b-2 border-black bg-[#ffffff] p-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="font-black uppercase tracking-wider flex items-center gap-2 text-black">
-              <Coins className="w-5 h-5" />
-              My Created Tokens
-            </CardTitle>
-            <Link to="/dashboard/create/token">
-              <Button size="sm" className="border-2 border-black bg-white text-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)]">
-                <Plus className="w-3 h-3 mr-1" /> New Token
-              </Button>
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          {isLoading ? (
-            <div className="space-y-3">
-              <div className="animate-pulse">
-                <div className="h-16 bg-gray-200 rounded mb-3"></div>
-                <div className="h-16 bg-gray-200 rounded mb-3"></div>
-                <div className="h-16 bg-gray-200 rounded"></div>
-              </div>
-            </div>
-          ) : createdTokens && createdTokens.length > 0 ? (
-            <div className="space-y-3">
-              {(createdTokens as `0x${string}`[]).map((token) => (
-                <TokenInfo key={token} tokenAddress={token} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <Coins className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-600 mb-4">You have not created any tokens yet.</p>
-              <Link to="/dashboard/create/token">
-                <Button className="border-4 border-black bg-[#000000] text-white font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-800">
-                  <Plus className="w-4 h-4 mr-1" /> Create Your First Token
-              </Button>
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link to="/dashboard/create/token">
-          <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer bg-[#FF00F5]">
-            <CardContent className="p-4 text-center">
-              <Coins className="w-8 h-8 mx-auto mb-2" />
-              <p className="font-black uppercase text-sm">Create Token</p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/dashboard/create/project">
-          <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer bg-[#7DF9FF]">
-            <CardContent className="p-4 text-center">
-              <Rocket className="w-8 h-8 mx-auto mb-2" />
-              <p className="font-black uppercase text-sm">Launch Presale</p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/dashboard/tools/token-locker">
-          <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer bg-[#FFFB8F]">
-            <CardContent className="p-4 text-center">
-              <Lock className="w-8 h-8 mx-auto mb-2" />
-              <p className="font-black uppercase text-sm">Lock Tokens</p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/dashboard/tools/airdrop">
-          <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0 hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all cursor-pointer bg-[#90EE90]">
-            <CardContent className="p-4 text-center">
-              <ArrowRight className="w-8 h-8 mx-auto mb-2" />
-              <p className="font-black uppercase text-sm">Airdrop</p>
-            </CardContent>
-          </Card>
-        </Link>
       </div>
     </div>
   );
