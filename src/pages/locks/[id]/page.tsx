@@ -22,25 +22,51 @@ interface LockInfo {
 
 function LockProgressBar({ lockDate, unlockDate }: { lockDate: bigint; unlockDate: bigint }) {
     const now = Date.now();
-    const lockTimestamp = Number(lockDate) * 1000;
-    const unlockTimestamp = Number(unlockDate) * 1000;
+    
+    // Safe number conversions
+    let lockTimestamp = 0;
+    let unlockTimestamp = 0;
+    try {
+        lockTimestamp = lockDate ? Number(lockDate) * 1000 : 0;
+        unlockTimestamp = unlockDate ? Number(unlockDate) * 1000 : 0;
+    } catch (e) {
+        console.error("Error converting timestamps:", e);
+    }
     
     const totalDuration = unlockTimestamp - lockTimestamp;
     const elapsed = now - lockTimestamp;
-    const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+    const progress = totalDuration > 0 ? Math.min(100, Math.max(0, (elapsed / totalDuration) * 100)) : 0;
     
-    const isExpired = now >= unlockTimestamp;
+    const isExpired = unlockTimestamp > 0 && now >= unlockTimestamp;
+    
+    // Safe date formatting
+    let lockDateStr = 'Unknown';
+    let unlockDateStr = 'Unknown';
+    let timeRemaining = '';
+    try {
+        if (lockTimestamp > 0) {
+            lockDateStr = format(new Date(lockTimestamp), 'MMM d, yyyy HH:mm');
+        }
+        if (unlockTimestamp > 0) {
+            unlockDateStr = format(new Date(unlockTimestamp), 'MMM d, yyyy HH:mm');
+            if (!isExpired) {
+                timeRemaining = formatDistanceToNow(new Date(unlockTimestamp), { addSuffix: true });
+            }
+        }
+    } catch (e) {
+        console.error("Error formatting dates:", e);
+    }
     
     return (
         <div className="space-y-3">
             <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-600 gap-2">
                 <div>
                     <p className="text-xs uppercase font-bold text-gray-500">Lock Date</p>
-                    <p className="font-medium">{format(new Date(lockTimestamp), 'MMM d, yyyy HH:mm')}</p>
+                    <p className="font-medium">{lockDateStr}</p>
                 </div>
                 <div className="sm:text-right">
                     <p className="text-xs uppercase font-bold text-gray-500">Unlock Date</p>
-                    <p className="font-medium">{format(new Date(unlockTimestamp), 'MMM d, yyyy HH:mm')}</p>
+                    <p className="font-medium">{unlockDateStr}</p>
                 </div>
             </div>
             <Progress 
@@ -55,7 +81,7 @@ function LockProgressBar({ lockDate, unlockDate }: { lockDate: bigint; unlockDat
                     </span>
                 ) : (
                     <span className="text-yellow-600 font-bold text-sm sm:text-base">
-                        {progress.toFixed(1)}% Complete • Unlocks {formatDistanceToNow(new Date(unlockTimestamp), { addSuffix: true })}
+                        {progress.toFixed(1)}% Complete • {timeRemaining ? `Unlocks ${timeRemaining}` : 'Calculating...'}
                     </span>
                 )}
             </div>
@@ -65,7 +91,16 @@ function LockProgressBar({ lockDate, unlockDate }: { lockDate: bigint; unlockDat
 
 export default function LockDetailPage() {
     const { id } = useParams<{ id: string }>();
-    const lockId = id ? BigInt(id) : undefined;
+    
+    // Safe BigInt conversion
+    let lockId: bigint | undefined = undefined;
+    try {
+        if (id && id.trim() !== '') {
+            lockId = BigInt(id);
+        }
+    } catch (e) {
+        console.error("Error converting lock ID to BigInt:", e, id);
+    }
 
     const { data: lockInfo, isLoading: isLoadingLock, error: lockError } = useReadContract({
         address: TokenLocker.address,
@@ -108,15 +143,25 @@ export default function LockDetailPage() {
 
     const formattedAmount = useMemo(() => {
         if (!lock?.amount || tokenDecimals === undefined) return '...';
-        return Number(formatUnits(lock.amount, tokenDecimals)).toLocaleString();
+        try {
+            return Number(formatUnits(lock.amount, tokenDecimals)).toLocaleString();
+        } catch (e) {
+            console.error("Error formatting amount:", e);
+            return '...';
+        }
     }, [lock?.amount, tokenDecimals]);
 
     const lockStatus = useMemo(() => {
         if (!lock) return 'unknown';
         if (lock.withdrawn) return 'withdrawn';
-        const now = Date.now();
-        const unlockTimestamp = Number(lock.unlockDate) * 1000;
-        return now >= unlockTimestamp ? 'unlockable' : 'locked';
+        try {
+            const now = Date.now();
+            const unlockTimestamp = lock.unlockDate ? Number(lock.unlockDate) * 1000 : 0;
+            return unlockTimestamp > 0 && now >= unlockTimestamp ? 'unlockable' : 'locked';
+        } catch (e) {
+            console.error("Error calculating lock status:", e);
+            return 'locked';
+        }
     }, [lock]);
 
     if (isLoadingLock) {
@@ -214,16 +259,20 @@ export default function LockDetailPage() {
                         </div>
                         <div>
                             <p className="text-xs uppercase font-bold text-gray-500">Contract Address</p>
-                            <a 
-                                href={`${EXPLORER_URL}/address/${lock.token}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-xs sm:text-sm hover:underline flex items-center gap-2 break-all"
-                            >
-                                <span className="hidden sm:inline">{lock.token}</span>
-                                <span className="sm:hidden">{lock.token.slice(0, 10)}...{lock.token.slice(-8)}</span>
-                                <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                            </a>
+                            {lock.token ? (
+                                <a 
+                                    href={`${EXPLORER_URL}/address/${lock.token}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-xs sm:text-sm hover:underline flex items-center gap-2 break-all"
+                                >
+                                    <span className="hidden sm:inline">{lock.token}</span>
+                                    <span className="sm:hidden">{lock.token.slice(0, 10)}...{lock.token.slice(-8)}</span>
+                                    <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                                </a>
+                            ) : (
+                                <p className="font-mono text-xs sm:text-sm text-gray-500">Unknown</p>
+                            )}
                         </div>
                         <div className="pt-3 sm:pt-4 border-t-2 border-gray-200">
                             <p className="text-xs uppercase font-bold text-gray-500">Locked Amount</p>
@@ -245,16 +294,20 @@ export default function LockDetailPage() {
                     <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                         <div>
                             <p className="text-xs uppercase font-bold text-gray-500">Owner Address</p>
-                            <a 
-                                href={`${EXPLORER_URL}/address/${lock.owner}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-xs sm:text-sm hover:underline flex items-center gap-2 break-all"
-                            >
-                                <span className="hidden sm:inline">{lock.owner}</span>
-                                <span className="sm:hidden">{lock.owner.slice(0, 10)}...{lock.owner.slice(-8)}</span>
-                                <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                            </a>
+                            {lock.owner ? (
+                                <a 
+                                    href={`${EXPLORER_URL}/address/${lock.owner}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-xs sm:text-sm hover:underline flex items-center gap-2 break-all"
+                                >
+                                    <span className="hidden sm:inline">{lock.owner}</span>
+                                    <span className="sm:hidden">{lock.owner.slice(0, 10)}...{lock.owner.slice(-8)}</span>
+                                    <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                                </a>
+                            ) : (
+                                <p className="font-mono text-xs sm:text-sm text-gray-500">Unknown</p>
+                            )}
                         </div>
                         <div className="p-3 sm:p-4 bg-gray-100 border-2 border-gray-300">
                             <p className="text-xs sm:text-sm text-gray-600">
@@ -302,7 +355,15 @@ export default function LockDetailPage() {
                                 <div className="pt-0.5">
                                     <p className="font-black uppercase text-sm sm:text-base">Lock Created</p>
                                     <p className="text-gray-600 text-xs sm:text-sm">
-                                        {format(new Date(Number(lock.lockDate) * 1000), 'MMM d, yyyy \'at\' HH:mm')}
+                                        {(() => {
+                                            try {
+                                                const timestamp = lock.lockDate ? Number(lock.lockDate) * 1000 : 0;
+                                                return timestamp > 0 ? format(new Date(timestamp), 'MMM d, yyyy \'at\' HH:mm') : 'Unknown';
+                                            } catch (e) {
+                                                console.error("Error formatting lock date:", e);
+                                                return 'Unknown';
+                                            }
+                                        })()}
                                     </p>
                                 </div>
                             </div>
@@ -315,7 +376,15 @@ export default function LockDetailPage() {
                                 <div className="pt-0.5">
                                     <p className="font-black uppercase text-sm sm:text-base">Unlock Date</p>
                                     <p className="text-gray-600 text-xs sm:text-sm">
-                                        {format(new Date(Number(lock.unlockDate) * 1000), 'MMM d, yyyy \'at\' HH:mm')}
+                                        {(() => {
+                                            try {
+                                                const timestamp = lock.unlockDate ? Number(lock.unlockDate) * 1000 : 0;
+                                                return timestamp > 0 ? format(new Date(timestamp), 'MMM d, yyyy \'at\' HH:mm') : 'Unknown';
+                                            } catch (e) {
+                                                console.error("Error formatting unlock date:", e);
+                                                return 'Unknown';
+                                            }
+                                        })()}
                                     </p>
                                 </div>
                             </div>
