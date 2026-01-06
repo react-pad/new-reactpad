@@ -155,39 +155,59 @@ function LockPreviewCard({ lock }: { lock: { id: bigint; token: `0x${string}`; a
   useEffect(() => {
     const interval = setInterval(() => {
       setNow(Date.now());
-    }, 1000);
+    }, 60000); // Update every minute instead of every second
 
     return () => clearInterval(interval);
   }, []);
 
-  const lockTimestamp = Number(lock.lockDate) * 1000;
-  const unlockTimestamp = Number(lock.unlockDate) * 1000;
+  // Safe bigint to string conversion
+  const lockIdString = lock.id !== undefined && lock.id !== null ? String(lock.id) : '0';
+  
+  // Safe number conversions with fallbacks
+  let lockTimestamp = 0;
+  let unlockTimestamp = 0;
+  try {
+    lockTimestamp = lock.lockDate ? Number(lock.lockDate) * 1000 : 0;
+    unlockTimestamp = lock.unlockDate ? Number(lock.unlockDate) * 1000 : 0;
+  } catch (e) {
+    console.error("Error converting lock timestamps:", e);
+  }
+  
   const totalDuration = unlockTimestamp - lockTimestamp;
   const elapsed = now - lockTimestamp;
-  const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
-  const isExpired = now >= unlockTimestamp;
+  const progress = totalDuration > 0 ? Math.min(100, Math.max(0, (elapsed / totalDuration) * 100)) : 0;
+  const isExpired = unlockTimestamp > 0 && now >= unlockTimestamp;
+
+  // Safe distance calculation
+  let timeRemaining = 'Ready';
+  if (!isExpired && unlockTimestamp > 0) {
+    try {
+      timeRemaining = formatDistanceToNow(new Date(unlockTimestamp), { addSuffix: true });
+    } catch (e) {
+      console.error("Error formatting distance:", e);
+      timeRemaining = 'Unknown';
+    }
+  }
 
   return (
     <div className="p-4 border-2 border-black bg-white shadow-[2px_2px_0_rgba(0,0,0,1)]">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <span className="font-black text-sm uppercase">{lock.name || `Lock #${lock.id.toString()}`}</span>
+          <span className="font-black text-sm uppercase">{lock.name || `Lock #${lockIdString}`}</span>
         </div>
         <span className={`px-2 py-0.5 text-xs font-bold uppercase ${lock.withdrawn ? 'bg-gray-400 text-white' : isExpired ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'}`}>
           {lock.withdrawn ? 'Withdrawn' : isExpired ? 'Unlockable' : 'Locked'}
         </span>
       </div>
       <div className="flex justify-between items-center mb-2">
-        <span className="text-sm font-bold">{lock.formattedAmount} {lock.tokenSymbol}</span>
-        <span className="text-xs text-gray-500">
-          {isExpired ? 'Ready' : formatDistanceToNow(new Date(unlockTimestamp), { addSuffix: true })}
-        </span>
+        <span className="text-sm font-bold">{lock.formattedAmount || '0'} {lock.tokenSymbol || ''}</span>
+        <span className="text-xs text-gray-500">{timeRemaining}</span>
       </div>
       {!lock.withdrawn && (
         <Progress value={progress} className={`h-1.5 border border-black ${isExpired ? 'bg-green-100' : 'bg-gray-100'}`} />
       )}
       <div className="mt-3 flex justify-end">
-        <Link to={`/locks/${lock.id.toString()}`}>
+        <Link to={`/locks/${lockIdString}`}>
           <Button size="sm" variant="outline" className="border-2 border-black font-bold text-xs uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] hover:shadow-[3px_3px_0_rgba(0,0,0,1)]">
             View <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
@@ -430,9 +450,16 @@ export default function UserDashboardPage() {
               </div>
             ) : activeLocks.length > 0 ? (
               <div className="space-y-3">
-                {activeLocks.slice(0, 3).map((lock) => (
-                  <LockPreviewCard key={lock.id.toString()} lock={lock} />
-                ))}
+                {activeLocks.slice(0, 3).map((lock) => {
+                  // Safety check for lock data
+                  if (!lock || lock.id === undefined) return null;
+                  try {
+                    return <LockPreviewCard key={lock.id.toString()} lock={lock} />;
+                  } catch (e) {
+                    console.error("Error rendering lock:", e, lock);
+                    return null;
+                  }
+                })}
                 {activeLocks.length > 3 && (
                   <Link to="/dashboard/tools/token-locker" className="block text-center">
                     <Button variant="outline" size="sm" className="border-2 border-black font-bold text-xs uppercase">

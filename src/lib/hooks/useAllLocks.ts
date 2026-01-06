@@ -88,24 +88,38 @@ export function useAllLocks(forceRefetch = false) {
     if (!lockData || !lockIds) return [];
 
     return lockData.map((d, i) => {
-      const lock = d.result as LockResult | undefined;
-      if (!lock) return null;
+      try {
+        const lock = d.result as LockResult | undefined;
+        if (!lock) return null;
 
-      const tokenAddress = lock.token as `0x${string}`;
-      const tokenInfo = tokenAddress ? tokenInfoMap.get(tokenAddress.toLowerCase()) : undefined;
-      const tokenSymbol = tokenInfo?.symbol;
-      const tokenDecimals = tokenInfo?.decimals;
+        const tokenAddress = lock.token as `0x${string}`;
+        const tokenInfo = tokenAddress ? tokenInfoMap.get(tokenAddress.toLowerCase()) : undefined;
+        const tokenSymbol = tokenInfo?.symbol || 'Unknown';
+        const tokenDecimals = tokenInfo?.decimals ?? 18;
 
-      const formattedAmount = tokenDecimals !== undefined
-        ? formatUnits(lock.amount, tokenDecimals)
-        : lock.amount.toString();
+        let formattedAmount = '0';
+        try {
+          formattedAmount = lock.amount !== undefined 
+            ? formatUnits(lock.amount, tokenDecimals)
+            : '0';
+        } catch (e) {
+          console.error("Error formatting lock amount:", e);
+          formattedAmount = lock.amount?.toString() || '0';
+        }
 
-      return {
-        id: lockIds[i],
-        ...lock,
-        tokenSymbol,
-        formattedAmount,
-      };
+        const lockId = lockIds[i];
+        if (lockId === undefined || lockId === null) return null;
+
+        return {
+          id: lockId,
+          ...lock,
+          tokenSymbol,
+          formattedAmount,
+        };
+      } catch (e) {
+        console.error("Error processing lock at index", i, ":", e);
+        return null;
+      }
     }).filter(l => l !== null);
 
   }, [lockData, tokenInfoMap, lockIds]);
