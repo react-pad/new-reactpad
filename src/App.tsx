@@ -6,12 +6,11 @@ import CreatePresalePage from "./pages/dashboard/create/presale/page";
 import CreateProjectPage from "./pages/dashboard/create/project/page";
 import CreateTokenPage from "./pages/dashboard/create/token/page";
 import ManagePresalePage from "./pages/dashboard/presales/manage/page";
+import StakingPage from "./pages/dashboard/staking/page";
 import AirdropPage from "./pages/dashboard/tools/airdrop/page";
 import TokenLockerPage from "./pages/dashboard/tools/token-locker/page";
 import UserDashboardPage from "./pages/dashboard/user/page";
 import LockDetailPage from "./pages/locks/[id]/page";
-import MarketDetailPage from "./pages/markets/[id]/page";
-import MarketsPage from "./pages/markets/page";
 import NFTDetailPage from "./pages/nfts/[id]/page";
 import NFTsPage from "./pages/nfts/page";
 import Home from "./pages/page";
@@ -35,11 +34,10 @@ function App() {
             <Route path="/dashboard/create/project" element={<CreateProjectPage />} />
             <Route path="/dashboard/create/token" element={<CreateTokenPage />} />
             <Route path="/dashboard/presales/manage/:address" element={<ManagePresalePage />} />
+            <Route path="/dashboard/staking" element={<StakingPage />} />
             <Route path="/dashboard/tools/airdrop" element={<AirdropPage />} />
             <Route path="/dashboard/tools/token-locker" element={<TokenLockerPage />} />
             <Route path="/dashboard/user" element={<UserDashboardPage />} />
-            <Route path="/markets" element={<MarketsPage />} />
-            <Route path="/markets/:id" element={<MarketDetailPage />} />
             <Route path="/nfts" element={<NFTsPage />} />
             <Route path="/nfts/:id" element={<NFTDetailPage />} />
             <Route path="/projects" element={<ProjectsPage />} />

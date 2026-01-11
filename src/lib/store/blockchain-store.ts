@@ -2,31 +2,6 @@ import { type Address } from 'viem';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export interface Market {
-  id: string;
-  pairAddress: string;
-  token0: {
-    symbol: string;
-    name: string;
-    decimals: number;
-    address: string;
-  };
-  token1: {
-    symbol: string;
-    name: string;
-    decimals: number;
-    address: string;
-  };
-  reserves: [bigint, bigint, number];
-  price: number;
-  name: string;
-  symbol: string;
-  logo: string;
-  creator: string;
-  marketCap: number;
-  createdAt: Date;
-}
-
 export interface TokenLock {
   id: bigint;
   token: Address;
@@ -58,12 +33,6 @@ interface BlockchainStore {
     metadata: CacheMetadata;
   }>;
 
-  // Markets Cache
-  markets: {
-    data: Market[];
-    metadata: CacheMetadata;
-  };
-
   // Presales Cache
   presales: {
     addresses: Address[];
@@ -85,12 +54,6 @@ interface BlockchainStore {
   isUserLocksStale: (address: string, maxAge?: number) => boolean;
   invalidateUserLock: (address: string, lockId: bigint) => void;
 
-  // Actions for Markets
-  setMarkets: (markets: Market[]) => void;
-  setMarketsLoading: (isLoading: boolean) => void;
-  getMarkets: () => Market[] | null;
-  isMarketsStale: (maxAge?: number) => boolean;
-
   // Actions for Presales
   setPresales: (addresses: Address[]) => void;
   setPresalesLoading: (isLoading: boolean) => void;
@@ -110,10 +73,6 @@ export const useBlockchainStore = create<BlockchainStore>()(
       // Initial state
       userTokens: {},
       userLocks: {},
-      markets: {
-        data: [],
-        metadata: { timestamp: 0, isLoading: false },
-      },
       presales: {
         addresses: [],
         metadata: { timestamp: 0, isLoading: false },
@@ -236,34 +195,6 @@ export const useBlockchainStore = create<BlockchainStore>()(
           };
         }),
 
-      // Markets Actions
-      setMarkets: (markets) =>
-        set({
-          markets: {
-            data: markets,
-            metadata: { timestamp: Date.now(), isLoading: false },
-          },
-        }),
-
-      setMarketsLoading: (isLoading) =>
-        set((state) => ({
-          markets: {
-            ...state.markets,
-            metadata: { ...state.markets.metadata, isLoading },
-          },
-        })),
-
-      getMarkets: () => {
-        const { markets } = get();
-        return markets.data.length > 0 ? markets.data : null;
-      },
-
-      isMarketsStale: (maxAge = DEFAULT_CACHE_TIME) => {
-        const { markets } = get();
-        if (!markets.metadata.timestamp) return true;
-        return Date.now() - markets.metadata.timestamp > maxAge;
-      },
-
       // Presales Actions
       setPresales: (addresses) =>
         set({
@@ -297,10 +228,6 @@ export const useBlockchainStore = create<BlockchainStore>()(
         set({
           userTokens: {},
           userLocks: {},
-          markets: {
-            data: [],
-            metadata: { timestamp: 0, isLoading: false },
-          },
           presales: {
             addresses: [],
             metadata: { timestamp: 0, isLoading: false },
@@ -358,10 +285,6 @@ export const useBlockchainStore = create<BlockchainStore>()(
             { ...value, metadata: { ...value.metadata, isLoading: false } },
           ])
         ),
-        markets: {
-          ...state.markets,
-          metadata: { ...state.markets.metadata, isLoading: false },
-        },
         presales: {
           ...state.presales,
           metadata: { ...state.presales.metadata, isLoading: false },
