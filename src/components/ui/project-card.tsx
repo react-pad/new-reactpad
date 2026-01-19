@@ -2,10 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Twitter, Send, Globe, MessageCircle } from "lucide-react";
+
+export type ProjectCategory = 'defi' | 'ai' | 'gaming' | 'infrastructure' | 'meme' | 'other';
+
+export interface ProjectSocials {
+    twitter?: string;
+    telegram?: string;
+    discord?: string;
+    website?: string;
+}
 
 export interface Project {
     id: string;
     statusType: 'live' | 'upcoming' | 'completed' | 'idea';
+    category?: ProjectCategory;
     logo: string;
     name: string;
     website: string;
@@ -16,6 +27,7 @@ export interface Project {
     goal: number;
     endTime?: Date;
     startTime?: Date;
+    socials?: ProjectSocials;
 }
 
 function CountdownTimer({ targetDate, isStart = false }: { targetDate: Date; isStart?: boolean }) {
@@ -59,12 +71,30 @@ export function ProjectCard({ project }: { project: Project }) {
         }
     };
 
+    const getCategoryStyle = () => {
+        switch (project.category) {
+            case 'defi': return { bg: 'bg-[#7DF9FF]', label: 'DeFi' };
+            case 'ai': return { bg: 'bg-[#E879F9]', label: 'AI' };
+            case 'gaming': return { bg: 'bg-[#FB923C]', label: 'Gaming' };
+            case 'infrastructure': return { bg: 'bg-[#A78BFA]', label: 'Infra' };
+            case 'meme': return { bg: 'bg-[#FFFF00]', label: 'Meme' };
+            default: return { bg: 'bg-[#D1D5DB]', label: 'Other' };
+        }
+    };
+
+    const categoryStyle = getCategoryStyle();
+
     return (
-        <div className="border-4 border-black p-6 bg-[#FFF9F0] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 group cursor-pointer">
+        <div className="relative border-4 border-black p-6 bg-[#FFF9F0] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 group cursor-pointer">
             {/* Status indicator */}
             <div className={`absolute top-0 right-0 w-4 h-4 border-2 border-black ${getStatusColor()}`}></div>
 
-            <div className="flex items-center space-x-4 mb-6">
+            {/* Category badge */}
+            <div className={`absolute top-4 left-4 px-3 py-1 ${categoryStyle.bg} border-2 border-black text-xs font-black uppercase tracking-wider`}>
+                {categoryStyle.label}
+            </div>
+
+            <div className="flex items-center space-x-4 mb-6 mt-8">
                 <div className="border-2 border-black rounded-full p-1 bg-white">
                     <Avatar className="w-14 h-14 border-2 border-black rounded-full">
                         <AvatarImage src={project.logo} alt={`${project.name} logo`} />
@@ -73,13 +103,63 @@ export function ProjectCard({ project }: { project: Project }) {
                         </AvatarFallback>
                     </Avatar>
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <h3 className="text-2xl font-black uppercase tracking-tight leading-tight break-words">
                         {project.name}
                     </h3>
                     <p className="text-sm font-bold mt-1 truncate">{project.website}</p>
                 </div>
             </div>
+
+            {/* Social icons */}
+            {project.socials && (
+                <div className="flex items-center gap-2 mb-4">
+                    {project.socials.twitter && (
+                        <a
+                            href={project.socials.twitter}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <Twitter className="w-4 h-4" />
+                        </a>
+                    )}
+                    {project.socials.telegram && (
+                        <a
+                            href={project.socials.telegram}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <Send className="w-4 h-4" />
+                        </a>
+                    )}
+                    {project.socials.discord && (
+                        <a
+                            href={project.socials.discord}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                        </a>
+                    )}
+                    {project.socials.website && (
+                        <a
+                            href={project.socials.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <Globe className="w-4 h-4" />
+                        </a>
+                    )}
+                </div>
+            )}
 
             <p className="font-medium mb-6 min-h-[3rem]">{project.description}</p>
 

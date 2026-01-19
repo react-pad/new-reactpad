@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwapForm } from "@/components/ui/swap-form";
 import { useMarkets } from "@/lib/hooks/useMarkets";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   useLaunchpadPresale,
@@ -22,6 +23,19 @@ export default function ProjectDetailPage() {
   } = useLaunchpadPresale(id as `0x${string}`);
   const { markets, isLoading: isLoadingMarkets } = useMarkets();
 
+  // React purity rule: avoid calling `Date.now()` during render.
+  // Keep a ticking "now" in state and update it in an effect instead.
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  useEffect(() => {
+    const updateNow = () => setNowMs(Date.now());
+    const timeoutId = window.setTimeout(updateNow, 0);
+    const intervalId = window.setInterval(updateNow, 1000);
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
   if (isLoadingPresale || isLoadingMarkets) {
     return <div className="text-center py-20">Loading project details...</div>;
   }
@@ -34,8 +48,9 @@ export default function ProjectDetailPage() {
     presale.status === "live" || presale.status === "upcoming";
   const isPresaleFinalized = presale.claimEnabled === true;
   const isPresaleCancelled = presale.refundsEnabled === true;
+  const presaleEndMs = presale.endTime ? Number(presale.endTime) * 1000 : null;
   const presaleHasEnded =
-    presale.endTime && Number(presale.endTime) * 1000 < Date.now();
+    presaleEndMs !== null && nowMs !== null ? presaleEndMs < nowMs : false;
 
   // Show presale view (with claim/refund UI) after the sale ends as well,
   // so participants can claim tokens or refunds instead of seeing Market Not Available.
@@ -146,15 +161,15 @@ export default function ProjectDetailPage() {
               <p className="font-bold">Status</p>
               <Badge
                 className={`capitalize ${presale.status === "live"
-                    ? "bg-green-500"
+                  ? "bg-green-500"
                   : presale.status === "finalized"
                     ? "bg-blue-500"
                     : presale.status === "cancelled"
                       ? "bg-red-500"
                       : presale.status === "upcoming"
                         ? "bg-yellow-500"
-                    : "bg-gray-500"
-                }`}
+                        : "bg-gray-500"
+                  }`}
               >
                 {presale.claimEnabled
                   ? "Finalized - Claim Open"

@@ -1,16 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { StakingContract, EXPLORER_URL } from "@/config";
+import { StakingContract } from "@/config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
-  ExternalLink,
   Gift,
   Loader2,
-  TrendingUp,
-  Wallet,
-  Zap,
+  Wallet
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -131,20 +128,6 @@ export default function StakingPage() {
     query: { enabled: !!address },
   });
 
-  // Read total staked (TVL)
-  const { data: totalSupply } = useReadContract({
-    address: StakingContract.address as Address,
-    abi: StakingContract.abi as Abi,
-    functionName: "totalSupply",
-  });
-
-  // Read staking status
-  const { data: stakingStatus } = useReadContract({
-    address: StakingContract.address as Address,
-    abi: StakingContract.abi as Abi,
-    functionName: "stakingStatus",
-  });
-
   // Transaction receipts
   const { isSuccess: isApprovalSuccess, isError: isApprovalError } =
     useWaitForTransactionReceipt({ hash: approvalHash });
@@ -182,13 +165,6 @@ export default function StakingPage() {
       return Number(formatUnits(pendingRewards as bigint, rewardDecimals)).toLocaleString(undefined, { maximumFractionDigits: 6 });
     } catch { return "0"; }
   }, [pendingRewards, rewardDecimals]);
-
-  const formattedTotalSupply = useMemo(() => {
-    if (!totalSupply) return "0";
-    try {
-      return Number(formatUnits(totalSupply as bigint, decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 });
-    } catch { return "0"; }
-  }, [totalSupply, decimals]);
 
   // Check if approval is needed
   const needsApproval = useMemo(() => {
@@ -509,21 +485,19 @@ export default function StakingPage() {
                 <div className="flex">
                   <button
                     onClick={() => setActiveTab("stake")}
-                    className={`flex-1 py-4 font-black uppercase tracking-wider text-sm transition-colors ${
-                      activeTab === "stake"
-                        ? "bg-[#7DF9FF] text-black"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    className={`flex-1 py-4 font-black uppercase tracking-wider text-sm transition-colors ${activeTab === "stake"
+                      ? "bg-[#7DF9FF] text-black"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                   >
                     Stake
                   </button>
                   <button
                     onClick={() => setActiveTab("unstake")}
-                    className={`flex-1 py-4 font-black uppercase tracking-wider text-sm transition-colors border-l-2 border-black ${
-                      activeTab === "unstake"
-                        ? "bg-[#7DF9FF] text-black"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    className={`flex-1 py-4 font-black uppercase tracking-wider text-sm transition-colors border-l-2 border-black ${activeTab === "unstake"
+                      ? "bg-[#7DF9FF] text-black"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
                   >
                     Unstake
                   </button>
@@ -645,78 +619,6 @@ export default function StakingPage() {
           </div>
         </div>
       )}
-
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-          <CardContent className="p-4 sm:p-6 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-[#FFFB8F] border-2 border-black">
-                <Zap className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase font-bold text-gray-500">Program Status</p>
-                <p
-                  className={`text-2xl font-black ${
-                    stakingStatus === undefined
-                      ? "text-gray-700"
-                      : stakingStatus
-                        ? "text-green-600"
-                        : "text-amber-600"
-                  }`}
-                >
-                  {stakingStatus === undefined ? "Checking..." : stakingStatus ? "Live" : "Paused"}
-                </p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600">
-              {stakingStatus === undefined
-                ? "We're checking the latest status from the contract."
-                : stakingStatus
-                  ? "Rewards are accruing in real time for every wallet in the pool."
-                  : "Rewards are currently paused until the pool is resumed."}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-          <CardContent className="p-4 sm:p-6 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-[#FFFB8F] border-2 border-black">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase font-bold text-gray-500">Total Staked</p>
-                <p className="text-2xl font-black text-gray-900">{formattedTotalSupply}</p>
-                <p className="text-xs text-gray-500">{stakingTokenSymbol || "Tokens"}</p>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600">Aggregate liquidity currently deposited into the staking contract.</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
-          <CardContent className="p-4 sm:p-6 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-[#FFFB8F] border-2 border-black">
-                <ExternalLink className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-xs uppercase font-bold text-gray-500">Contract</p>
-                <a
-                  href={`${EXPLORER_URL}/address/${StakingContract.address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-mono hover:underline flex items-center gap-1"
-                >
-                  {StakingContract.address.slice(0, 6)}...{StakingContract.address.slice(-4)}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600">View the verified contract on the block explorer.</p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

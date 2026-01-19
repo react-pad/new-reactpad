@@ -3,6 +3,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type PresaleStatus = 'upcoming' | 'live' | 'ended' | 'finalized' | 'cancelled';
+export type PresaleCategory = 'defi' | 'ai' | 'gaming' | 'infrastructure' | 'meme' | 'other';
+
+export interface PresaleSocials {
+  twitter?: string;
+  telegram?: string;
+  discord?: string;
+  website?: string;
+}
 
 export interface PresaleData {
   address: Address;
@@ -30,6 +38,11 @@ export interface PresaleData {
   paymentTokenSymbol?: string;
   paymentTokenName?: string;
   paymentTokenDecimals?: number;
+  // Metadata (from external source)
+  category?: PresaleCategory;
+  socials?: PresaleSocials;
+  description?: string;
+  logo?: string;
 }
 
 export interface UserPresaleData {
