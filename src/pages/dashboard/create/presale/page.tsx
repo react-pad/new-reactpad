@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { config } from "@/config";
-import { LaunchpadPresaleContract, PresaleFactory } from "@/config";
+import { LaunchpadPresaleContract, PresaleFactory, config } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 // LaunchpadService removed - data is now stored only on blockchain
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
 import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
@@ -50,6 +50,7 @@ function CreatePresaleForm({
   onPresaleCreated: (hash: `0x${string}`) => void;
 }) {
   const { address } = useAccount();
+  const { presaleFactory } = useChainContracts();
   const { writeContract, isPending, error } = useWriteContract();
   const [isChecking, setIsChecking] = useState(false);
   // const router = useRouter();
@@ -113,7 +114,7 @@ function CreatePresaleForm({
     try {
       // First get the total number of presales
       const totalPresales = (await readContract(config, {
-        address: PresaleFactory.address as Address,
+        address: presaleFactory,
         abi: PresaleFactory.abi,
         functionName: "totalPresales",
       })) as bigint;
@@ -122,7 +123,7 @@ function CreatePresaleForm({
         // Fetch all presale addresses
         const presaleAddresses = await readContracts(config, {
           contracts: Array.from({ length: Number(totalPresales) }, (_, i) => ({
-            address: PresaleFactory.address as Address,
+            address: presaleFactory,
             abi: PresaleFactory.abi as unknown as Abi,
             functionName: "allPresales",
             args: [BigInt(i)],
@@ -224,7 +225,7 @@ function CreatePresaleForm({
 
     writeContract(
       {
-        address: PresaleFactory.address as Address,
+        address: presaleFactory,
         abi: PresaleFactory.abi,
         functionName: "createPresale",
         args: [params],

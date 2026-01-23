@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
-import { useReadContract, useReadContracts } from 'wagmi';
 import { PresaleFactoryContract } from '@/config';
+import { useChainContracts } from '@/lib/hooks/useChainContracts';
+import { useReadContract, useReadContracts } from 'wagmi';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 import type { Address } from 'viem';
 
@@ -15,11 +16,12 @@ export function usePresales(forceRefetch = false) {
   const cachedPresales = getPresales();
   const isStale = isPresalesStale();
   const shouldFetch = isStale || forceRefetch || !cachedPresales;
+  const { presaleFactory } = useChainContracts();
 
   // First get total count of presales
   const { data: totalPresales, isLoading: isLoadingTotal, refetch: refetchTotal } = useReadContract({
     abi: PresaleFactoryContract.abi,
-    address: PresaleFactoryContract.address as Address,
+    address: presaleFactory,
     functionName: 'totalPresales',
     query: {
       enabled: shouldFetch,
@@ -32,11 +34,11 @@ export function usePresales(forceRefetch = false) {
     const count = Number(totalPresales);
     return Array.from({ length: count }, (_, i) => ({
       abi: PresaleFactoryContract.abi,
-      address: PresaleFactoryContract.address as Address,
+      address: presaleFactory,
       functionName: 'allPresales' as const,
       args: [BigInt(i)],
     }));
-  }, [totalPresales]);
+  }, [presaleFactory, totalPresales]);
 
   const { data: addressResults, isLoading: isLoadingAddresses, refetch: refetchAddresses } = useReadContracts({
     contracts: addressQueries,

@@ -1,4 +1,4 @@
-import { maxUint256, type Address } from 'viem';
+import { defineChain, maxUint256, type Address } from 'viem';
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import {
     coinbaseWallet,
@@ -27,17 +27,88 @@ const connectors = connectorsForWallets(
     }
 );
 
+export const REACTIVE_TESTNET_CHAIN_ID = reactiveTestnet.id;
+export const REACTIVE_MAINNET_CHAIN_ID = 1597;
+
+export const reactiveMainnet = defineChain({
+    id: REACTIVE_MAINNET_CHAIN_ID,
+    name: "Reactive Mainnet",
+    nativeCurrency: {
+        name: "REACT",
+        symbol: "REACT",
+        decimals: 18,
+    },
+    rpcUrls: {
+        default: { http: ["https://mainnet-rpc.rnk.dev"] },
+        public: { http: ["https://mainnet-rpc.rnk.dev"] },
+    },
+    blockExplorers: {
+        default: { name: "ReactiveScan", url: "https://reactscan.net" },
+    },
+});
+
+export const SUPPORTED_CHAINS = [reactiveMainnet, reactiveTestnet] as const;
+export const SUPPORTED_CHAIN_IDS = SUPPORTED_CHAINS.map((chain) => chain.id) as number[];
+export const CHAIN_LABELS: Record<number, string> = {
+    [REACTIVE_MAINNET_CHAIN_ID]: "Reactive Mainnet",
+    [REACTIVE_TESTNET_CHAIN_ID]: "Lasna Testnet",
+};
+
+type ContractAddressMap = {
+    tokenLocker: Address;
+    nftFactory: Address;
+    presaleFactory: Address;
+    tokenFactory: Address;
+    airdropMultisender: Address;
+};
+
+export const CONTRACT_ADDRESSES_BY_CHAIN: Record<number, ContractAddressMap> = {
+    [REACTIVE_MAINNET_CHAIN_ID]: {
+        tokenLocker: "0x36E903d3BcF85CF2a35E489DC77089Ccd8a289d0" as Address,
+        nftFactory: "0xD4D48d9044203596d52966b6e3825e9A14800B31" as Address,
+        presaleFactory: "0x8976Cb41aC6ae2d317763C3EFE63C56272ff8760" as Address,
+        tokenFactory: "0x23B09983E7F4A13b4DB40661C8F45580C692B262" as Address,
+        airdropMultisender: "0xDD3d8e4Dddab003B42a3a865E6FA3bBDDe6d23c1" as Address,
+    },
+    [REACTIVE_TESTNET_CHAIN_ID]: {
+        tokenLocker: "0x40bfd48521cdaa3ea460917e053738765063745d" as Address,
+        nftFactory: "0x81850e53dec753b95de4599173755bc640575c3d" as Address,
+        presaleFactory: "0xba3a598a13ce439bfed5b18b405e9e45ef2a1336" as Address,
+        tokenFactory: "0xc1e3b5ca888c2e63cd87934e76393cc19a418397" as Address,
+        airdropMultisender: "0xf32488c7e6bd149841e8801c8a60fc4f12774002" as Address,
+    },
+};
+
+export const getContractAddresses = (chainId?: number) => {
+    if (chainId && CONTRACT_ADDRESSES_BY_CHAIN[chainId]) {
+        return CONTRACT_ADDRESSES_BY_CHAIN[chainId];
+    }
+    return CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID];
+};
+
+export const EXPLORER_URLS_BY_CHAIN: Record<number, string> = {
+    [REACTIVE_MAINNET_CHAIN_ID]: "https://reactscan.net",
+    [REACTIVE_TESTNET_CHAIN_ID]: "https://lasna.reactscan.net",
+};
+
+export const getExplorerUrl = (chainId?: number) => {
+    if (chainId && EXPLORER_URLS_BY_CHAIN[chainId]) {
+        return EXPLORER_URLS_BY_CHAIN[chainId];
+    }
+    return EXPLORER_URLS_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID];
+};
+
 export const config = createConfig({
-    chains: [reactiveTestnet],
+    chains: SUPPORTED_CHAINS,
     connectors,
     transports: {
         // [baseSepolia.id]: http(),
+        [reactiveMainnet.id]: http(),
         [reactiveTestnet.id]: http(),
     },
 });
 
-// Block explorer URL for Lasna Testnet
-export const EXPLORER_URL = "https://lasna.reactscan.net";
+export const EXPLORER_URL = getExplorerUrl(REACTIVE_MAINNET_CHAIN_ID);
 
 const uint256Max = maxUint256;
 const feeToSpacing = {
@@ -3490,12 +3561,12 @@ export const V2ERC20 = {
 };
 
 export const AirdropMultiSender = {
-    address: "0xf32488c7e6bd149841e8801c8a60fc4f12774002",
+    address: CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID].airdropMultisender,
     abi: [{ "inputs": [], "name": "InvalidAmount", "type": "error" }, { "inputs": [], "name": "InvalidRecipient", "type": "error" }, { "inputs": [], "name": "LengthMismatch", "type": "error" }, { "inputs": [{ "internalType": "address", "name": "token", "type": "address" }], "name": "SafeERC20FailedOperation", "type": "error" }, { "anonymous": false, "inputs": [{ "indexed": false, "internalType": "uint256", "name": "totalAmount", "type": "uint256" }], "name": "EthSent", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "token", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "totalAmount", "type": "uint256" }], "name": "TokensSent", "type": "event" }, { "inputs": [{ "internalType": "contract IERC20", "name": "token", "type": "address" }, { "internalType": "address[]", "name": "recipients", "type": "address[]" }, { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }], "name": "sendERC20", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address[]", "name": "recipients", "type": "address[]" }, { "internalType": "uint256[]", "name": "amounts", "type": "uint256[]" }], "name": "sendETH", "outputs": [], "stateMutability": "payable", "type": "function" }]
 }
 
 export const NFTFactory = {
-    address: "0x81850e53dec753b95de4599173755bc640575c3d",
+    address: CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID].nftFactory,
     abi: [
         {
             "type": "function",
@@ -4426,7 +4497,7 @@ export const PresaleContract = {
 }
 
 export const PresaleFactory = {
-    address: "0xba3a598a13ce439bfed5b18b405e9e45ef2a1336",
+    address: CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID].presaleFactory,
     abi: [
         { "type": "constructor", "inputs": [], "stateMutability": "nonpayable" },
         {
@@ -4642,12 +4713,12 @@ export const PresaleFactory = {
 } as const
 
 export const TokenFactory = {
-    address: "0xc1e3b5ca888c2e63cd87934e76393cc19a418397",
+    address: CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID].tokenFactory,
     abi: [{ "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "creator", "type": "address" }, { "indexed": true, "internalType": "address", "name": "token", "type": "address" }, { "indexed": true, "internalType": "enum TokenFactory.TokenType", "name": "tokenType", "type": "uint8" }], "name": "TokenCreated", "type": "event" }, { "inputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "symbol", "type": "string" }, { "internalType": "uint8", "name": "decimals", "type": "uint8" }, { "internalType": "uint256", "name": "initialSupply", "type": "uint256" }, { "internalType": "address", "name": "initialRecipient", "type": "address" }], "internalType": "struct TokenFactory.TokenParams", "name": "params", "type": "tuple" }], "name": "createBurnableToken", "outputs": [{ "internalType": "address", "name": "token", "type": "address" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "symbol", "type": "string" }, { "internalType": "uint8", "name": "decimals", "type": "uint8" }, { "internalType": "uint256", "name": "initialSupply", "type": "uint256" }, { "internalType": "address", "name": "initialRecipient", "type": "address" }], "internalType": "struct TokenFactory.TokenParams", "name": "params", "type": "tuple" }], "name": "createMintableToken", "outputs": [{ "internalType": "address", "name": "token", "type": "address" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "symbol", "type": "string" }, { "internalType": "uint8", "name": "decimals", "type": "uint8" }, { "internalType": "uint256", "name": "initialSupply", "type": "uint256" }, { "internalType": "address", "name": "initialRecipient", "type": "address" }], "internalType": "struct TokenFactory.TokenParams", "name": "params", "type": "tuple" }], "name": "createNonMintableToken", "outputs": [{ "internalType": "address", "name": "token", "type": "address" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "symbol", "type": "string" }, { "internalType": "uint8", "name": "decimals", "type": "uint8" }, { "internalType": "uint256", "name": "initialSupply", "type": "uint256" }, { "internalType": "address", "name": "initialRecipient", "type": "address" }], "internalType": "struct TokenFactory.TokenParams", "name": "params", "type": "tuple" }], "name": "createPlainToken", "outputs": [{ "internalType": "address", "name": "token", "type": "address" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "components": [{ "internalType": "string", "name": "name", "type": "string" }, { "internalType": "string", "name": "symbol", "type": "string" }, { "internalType": "uint8", "name": "decimals", "type": "uint8" }, { "internalType": "uint256", "name": "initialSupply", "type": "uint256" }, { "internalType": "address", "name": "initialRecipient", "type": "address" }], "internalType": "struct TokenFactory.TokenParams", "name": "params", "type": "tuple" }, { "components": [{ "internalType": "address", "name": "taxWallet", "type": "address" }, { "internalType": "uint96", "name": "taxBps", "type": "uint96" }], "internalType": "struct TokenFactory.TaxParams", "name": "tax", "type": "tuple" }], "name": "createTaxableToken", "outputs": [{ "internalType": "address", "name": "token", "type": "address" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "name": "deployments", "outputs": [{ "internalType": "address", "name": "token", "type": "address" }, { "internalType": "enum TokenFactory.TokenType", "name": "tokenType", "type": "uint8" }, { "internalType": "address", "name": "creator", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "creator", "type": "address" }], "name": "tokensCreatedBy", "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "totalDeployments", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }]
 }
 
 export const TokenLocker = {
-    address: "0x40bfd48521cdaa3ea460917e053738765063745d" as Address,
+    address: CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID].tokenLocker,
     abi: [
     {
       "type": "function",

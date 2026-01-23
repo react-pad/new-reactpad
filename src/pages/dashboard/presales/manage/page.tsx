@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { LaunchpadPresaleContract, EXPLORER_URL } from "@/config";
+import { LaunchpadPresaleContract } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import {
   useLaunchpadPresale,
   type PresaleWithStatus,
@@ -155,6 +156,7 @@ function ManagePresaleView({
   presale: PresaleWithStatus;
   refetchPresale: () => void;
 }) {
+  const { explorerUrl } = useChainContracts();
   const [singleWhitelist, setSingleWhitelist] = useState("");
   const [bulkWhitelist, setBulkWhitelist] = useState("");
   const [removeAddress, setRemoveAddress] = useState("");
@@ -556,6 +558,7 @@ function ManagePresaleView({
 
   // Check if presale has ended (finalized or cancelled)
   const presaleHasEnded = presale.claimEnabled || presale.refundsEnabled;
+  const explorerHref = `${explorerUrl}/address/${presaleAddress}`;
 
   return (
     <div className="space-y-8">
@@ -564,7 +567,7 @@ function ManagePresaleView({
         <p>
           Manage contract{" "}
           <a
-            href={`${EXPLORER_URL}/address/${presaleAddress}`}
+            href={explorerHref}
             target="_blank"
             rel="noopener noreferrer"
             className="underline font-medium"

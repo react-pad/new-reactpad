@@ -1,11 +1,13 @@
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { PresaleFactory, LaunchpadPresaleContract } from '@/config';
+import { useChainContracts } from '@/lib/hooks/useChainContracts';
+import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import type { Address } from 'viem';
 
 /**
  * Hook for factory owner to manage whitelisted creators
  */
 export function useSetWhitelistedCreator() {
+  const { presaleFactory } = useChainContracts();
   const {
     writeContract,
     data: hash,
@@ -21,7 +23,7 @@ export function useSetWhitelistedCreator() {
 
   const setWhitelistedCreator = (creatorAddress: Address, whitelisted: boolean) => {
     writeContract({
-      address: PresaleFactory.address as Address,
+      address: presaleFactory,
       abi: PresaleFactory.abi,
       functionName: 'setWhitelistedCreator',
       args: [creatorAddress, whitelisted],
@@ -45,6 +47,7 @@ export function useSetWhitelistedCreator() {
  * Hook for factory owner to update fee recipient
  */
 export function useSetFeeRecipient() {
+  const { presaleFactory } = useChainContracts();
   const {
     writeContract,
     data: hash,
@@ -60,7 +63,7 @@ export function useSetFeeRecipient() {
 
   const setFeeRecipient = (newRecipient: Address) => {
     writeContract({
-      address: PresaleFactory.address as Address,
+      address: presaleFactory,
       abi: PresaleFactory.abi,
       functionName: 'setFeeRecipient',
       args: [newRecipient],
@@ -122,4 +125,3 @@ export function useUpdatePresaleFees() {
     isBusy: isPending || isConfirming,
   };
 }
-

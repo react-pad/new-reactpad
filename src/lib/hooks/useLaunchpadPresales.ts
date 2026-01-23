@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { usePublicClient, useReadContract, useReadContracts } from 'wagmi';
 import { erc20Abi, parseAbiItem, type Abi, type Address, type PublicClient } from 'viem';
 import { PresaleFactoryContract, LaunchpadPresaleContract } from '@/config';
@@ -14,9 +15,12 @@ const PRESALE_CREATED_EVENT = parseAbiItem(
 
 type WhitelistMap = Record<string, boolean>;
 
-async function fetchAllWhitelistFlags(client: PublicClient): Promise<WhitelistMap> {
+async function fetchAllWhitelistFlags(
+  client: PublicClient,
+  presaleFactoryAddress: Address
+): Promise<WhitelistMap> {
   const logs = await client.getLogs({
-    address: PresaleFactoryContract.address as Address,
+    address: presaleFactoryAddress,
     event: PRESALE_CREATED_EVENT,
     fromBlock: 0n,
   });
@@ -31,9 +35,13 @@ async function fetchAllWhitelistFlags(client: PublicClient): Promise<WhitelistMa
   return map;
 }
 
-async function fetchWhitelistFlag(client: PublicClient, presaleAddress: Address): Promise<boolean> {
+async function fetchWhitelistFlag(
+  client: PublicClient,
+  presaleFactoryAddress: Address,
+  presaleAddress: Address
+): Promise<boolean> {
   const logs = await client.getLogs({
-    address: PresaleFactoryContract.address as Address,
+    address: presaleFactoryAddress,
     event: PRESALE_CREATED_EVENT,
     args: { presale: presaleAddress },
     fromBlock: 0n,
@@ -67,7 +75,12 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   } = useLaunchpadPresaleStore();
 
   const publicClient = usePublicClient();
+  const { presaleFactory } = useChainContracts();
   const [whitelistMap, setWhitelistMap] = useState<WhitelistMap>({});
+
+  useEffect(() => {
+    setWhitelistMap({});
+  }, [presaleFactory]);
 
   const cachedAddresses = getPresaleAddresses();
   const isStale = isPresaleAddressesStale();
@@ -76,7 +89,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   // Fetch total number of presales
   const { data: totalPresales, isLoading: isLoadingTotal, refetch: refetchTotal } = useReadContract({
     abi: presaleFactoryAbi,
-    address: PresaleFactoryContract.address as Address,
+    address: presaleFactory,
     functionName: 'totalPresales',
     query: {
       enabled: shouldFetchAddresses,
@@ -89,11 +102,11 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     const count = Number(totalPresales);
     return Array.from({ length: count }, (_, i) => ({
       abi: presaleFactoryAbi,
-      address: PresaleFactoryContract.address as Address,
+      address: presaleFactory,
       functionName: 'allPresales',
       args: [BigInt(i)],
     } as const));
-  }, [totalPresales]);
+  }, [presaleFactory, totalPresales]);
 
   const { data: addressResults, isLoading: isLoadingAddresses, refetch: refetchAddresses } = useReadContracts({
     contracts: addressQueries,
@@ -125,7 +138,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     let cancelled = false;
     (async () => {
       try {
-        const latest = await fetchAllWhitelistFlags(publicClient);
+        const latest = await fetchAllWhitelistFlags(publicClient, presaleFactory);
         if (!cancelled) {
           setWhitelistMap((prev) => ({ ...prev, ...latest }));
         }
@@ -137,7 +150,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     return () => {
       cancelled = true;
     };
-  }, [publicClient, presaleAddresses, unknownWhitelistCount]);
+  }, [presaleFactory, publicClient, presaleAddresses, unknownWhitelistCount]);
 
   // Update cache when addresses are fetched
   useEffect(() => {
@@ -363,6 +376,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
   } = useLaunchpadPresaleStore();
 
   const publicClient = usePublicClient();
+  const { presaleFactory } = useChainContracts();
   const cachedPresale = presaleAddress ? getPresale(presaleAddress) : null;
   const [requiresWhitelist, setRequiresWhitelist] = useState<boolean | undefined>(cachedPresale?.requiresWhitelist);
 
@@ -381,7 +395,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
     let cancelled = false;
     (async () => {
       try {
-        const flag = await fetchWhitelistFlag(publicClient, presaleAddress);
+        const flag = await fetchWhitelistFlag(publicClient, presaleFactory, presaleAddress);
         if (!cancelled) {
           setRequiresWhitelist(flag);
         }
@@ -396,7 +410,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
     return () => {
       cancelled = true;
     };
-  }, [publicClient, presaleAddress, requiresWhitelist]);
+  }, [presaleFactory, publicClient, presaleAddress, requiresWhitelist]);
 
   // Fetch presale data
   const presaleDataQueries = useMemo(() => {

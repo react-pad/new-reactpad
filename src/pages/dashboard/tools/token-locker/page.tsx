@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { TokenLocker, EXPLORER_URL } from "@/config";
+import { TokenLocker } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { useAllLocks } from "@/lib/hooks/useAllLocks";
 import { formatDistanceToNow, format } from "date-fns";
 import { useSearchParams, Link } from "react-router-dom";
@@ -121,6 +122,7 @@ function LockCard({
   onTransfer,
   unlockingId,
   isOwner,
+  explorerUrl,
 }: {
   lock: LockData;
   onUnlock: (lockId: bigint) => void;
@@ -128,6 +130,7 @@ function LockCard({
   onTransfer: (lockId: bigint) => void;
   unlockingId: bigint | null;
   isOwner: boolean;
+  explorerUrl: string;
 }) {
   // Safe conversions
   let unlockTimestamp = 0;
@@ -178,7 +181,7 @@ function LockCard({
             <p className="text-xs text-gray-500 uppercase font-bold">Token</p>
             <p className="font-bold">{lock.tokenSymbol ?? "Unknown"}</p>
             <a
-              href={`${EXPLORER_URL}/address/${lock.token}`}
+              href={`${explorerUrl}/address/${lock.token}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-mono text-gray-500 hover:text-black flex items-center gap-1"
@@ -257,6 +260,7 @@ function CreateLockModal({
 }) {
   const [searchParams] = useSearchParams();
   const { address } = useAccount();
+  const { tokenLocker } = useChainContracts();
 
   const {
     data: lockHash,
@@ -359,7 +363,7 @@ function CreateLockModal({
     abi: erc20Abi,
     address: normalizedTokenAddress,
     functionName: "allowance",
-    args: [address!, TokenLocker.address],
+    args: [address!, tokenLocker],
     query: {
       enabled: !!address && isValidTokenAddress,
     },
@@ -389,7 +393,7 @@ function CreateLockModal({
       address: normalizedTokenAddress,
       abi: erc20Abi,
       functionName: "approve",
-      args: [TokenLocker.address, maxUint256],
+      args: [tokenLocker, maxUint256],
     });
   };
 
@@ -442,7 +446,7 @@ function CreateLockModal({
     }
 
     console.log("Lock params:", {
-      contractAddress: TokenLocker.address,
+      contractAddress: tokenLocker,
       tokenAddress,
       normalizedTokenAddress,
       tokenAddressLength: tokenAddress.length,
@@ -458,7 +462,7 @@ function CreateLockModal({
 
     console.log("Sending lock transaction...");
     lockTokens({
-      address: TokenLocker.address,
+      address: tokenLocker,
       abi: TokenLocker.abi as Abi,
       functionName: "lockTokens",
       args: [
@@ -695,6 +699,7 @@ function ExtendLockModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { tokenLocker } = useChainContracts();
   const [additionalDays, setAdditionalDays] = useState("");
   const {
     data: hash,
@@ -722,7 +727,7 @@ function ExtendLockModal({
 
     const additionalSeconds = days * 24 * 60 * 60;
     writeContract({
-      address: TokenLocker.address,
+      address: tokenLocker,
       abi: TokenLocker.abi as Abi,
       functionName: "extendLock",
       args: [lockId, BigInt(additionalSeconds)],
@@ -803,6 +808,7 @@ function TransferLockModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { tokenLocker } = useChainContracts();
   const [newOwner, setNewOwner] = useState("");
   const {
     data: hash,
@@ -817,7 +823,7 @@ function TransferLockModal({
 
   const handleTransfer = () => {
     writeContract({
-      address: TokenLocker.address,
+      address: tokenLocker,
       abi: TokenLocker.abi as Abi,
       functionName: "transferLockOwnership",
       args: [lockId, newOwner as `0x${string}`],
@@ -895,6 +901,7 @@ function TransferLockModal({
 
 export default function TokenLockerPage() {
   const { address } = useAccount();
+  const { explorerUrl, tokenLocker } = useChainContracts();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [extendingLockId, setExtendingLockId] = useState<bigint | null>(null);
   const [transferringLockId, setTransferringLockId] = useState<bigint | null>(
@@ -916,7 +923,7 @@ export default function TokenLockerPage() {
   const handleUnlock = (lockId: bigint) => {
     setUnlockingId(lockId);
     unlockTokens({
-      address: TokenLocker.address,
+      address: tokenLocker,
       abi: TokenLocker.abi as Abi,
       functionName: "unlock",
       args: [lockId],
@@ -1018,6 +1025,7 @@ export default function TokenLockerPage() {
                   onTransfer={setTransferringLockId}
                   unlockingId={unlockingId}
                   isOwner={isOwner}
+                  explorerUrl={explorerUrl}
                 />
               );
             })}
@@ -1046,6 +1054,7 @@ export default function TokenLockerPage() {
                     onTransfer={setTransferringLockId}
                     unlockingId={unlockingId}
                     isOwner={isOwner}
+                    explorerUrl={explorerUrl}
                   />
                 );
               })}

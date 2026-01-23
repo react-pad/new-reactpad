@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { TokenLocker, EXPLORER_URL } from "@/config";
+import { TokenLocker } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { format, formatDistanceToNow } from "date-fns";
 import { useParams, Link } from "react-router-dom";
 import { useMemo } from "react";
@@ -91,6 +92,7 @@ function LockProgressBar({ lockDate, unlockDate }: { lockDate: bigint; unlockDat
 
 export default function LockDetailPage() {
     const { id } = useParams<{ id: string }>();
+    const { explorerUrl, tokenLocker } = useChainContracts();
     
     // Safe BigInt conversion
     let lockId: bigint | undefined = undefined;
@@ -103,7 +105,7 @@ export default function LockDetailPage() {
     }
 
     const { data: lockInfo, isLoading: isLoadingLock, error: lockError } = useReadContract({
-        address: TokenLocker.address,
+        address: tokenLocker,
         abi: TokenLocker.abi as Abi,
         functionName: 'getLock',
         args: lockId !== undefined ? [lockId] : undefined,
@@ -261,7 +263,7 @@ export default function LockDetailPage() {
                             <p className="text-xs uppercase font-bold text-gray-500">Contract Address</p>
                             {lock.token ? (
                                 <a 
-                                    href={`${EXPLORER_URL}/address/${lock.token}`}
+                                    href={`${explorerUrl}/address/${lock.token}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-mono text-xs sm:text-sm hover:underline flex items-center gap-2 break-all"
@@ -296,7 +298,7 @@ export default function LockDetailPage() {
                             <p className="text-xs uppercase font-bold text-gray-500">Owner Address</p>
                             {lock.owner ? (
                                 <a 
-                                    href={`${EXPLORER_URL}/address/${lock.owner}`}
+                                    href={`${explorerUrl}/address/${lock.owner}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-mono text-xs sm:text-sm hover:underline flex items-center gap-2 break-all"
@@ -418,12 +420,12 @@ export default function LockDetailPage() {
                             <p className="text-gray-600 mt-1 text-xs sm:text-sm">
                                 This lock is verified on the blockchain. All data is fetched directly from the smart contract at{' '}
                                 <a 
-                                    href={`${EXPLORER_URL}/address/${TokenLocker.address}`}
+                                    href={`${explorerUrl}/address/${tokenLocker}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="font-mono text-xs hover:underline break-all"
                                 >
-                                    {TokenLocker.address.slice(0, 10)}...{TokenLocker.address.slice(-8)}
+                                    {tokenLocker.slice(0, 10)}...{tokenLocker.slice(-8)}
                                 </a>
                             </p>
                         </div>

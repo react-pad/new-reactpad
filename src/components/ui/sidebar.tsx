@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Layers,
   Menu,
+  Network,
   Plus,
   Rocket,
   Shield,
@@ -12,8 +13,13 @@ import {
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { Address } from "viem";
-import { reactiveTestnet } from "viem/chains";
-import { useAccount, useBalance, useDisconnect, useSwitchChain } from "wagmi";
+import {
+  CHAIN_LABELS,
+  REACTIVE_MAINNET_CHAIN_ID,
+  REACTIVE_TESTNET_CHAIN_ID,
+  SUPPORTED_CHAIN_IDS,
+} from "@/config";
+import { useAccount, useBalance, useChainId, useDisconnect, useSwitchChain } from "wagmi";
 
 const navItems = [
   { name: "Dashboard", href: "/dashboard/user", icon: LayoutDashboard },
@@ -26,14 +32,25 @@ const SidebarContent = () => {
   const location = useLocation();
   const pathname = location.pathname;
   const { openConnectModal } = useConnectModal();
-  const { address, chain } = useAccount();
+  const { address } = useAccount();
+  const chainId = useChainId();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [ethPriceUsd, setEthPriceUsd] = useState(0);
   const { isAdmin } = useIsAdmin(address as Address | undefined);
 
   const isConnected = !!address;
-  const isWrongNetwork = isConnected && chain?.id !== reactiveTestnet.id;
+  const isSupportedNetwork = SUPPORTED_CHAIN_IDS.includes(chainId);
+  const isWrongNetwork = isConnected && !isSupportedNetwork;
+  const targetChainId = isSupportedNetwork
+    ? chainId === REACTIVE_MAINNET_CHAIN_ID
+      ? REACTIVE_TESTNET_CHAIN_ID
+      : REACTIVE_MAINNET_CHAIN_ID
+    : REACTIVE_MAINNET_CHAIN_ID;
+  const targetChainLabel = CHAIN_LABELS[targetChainId] ?? "Reactive Mainnet";
+  const networkButtonLabel = isWrongNetwork
+    ? `Wrong network - Switch to ${targetChainLabel}`
+    : `Switch to ${targetChainLabel}`;
 
   const { data: balanceData } = useBalance({ address });
   const balance = balanceData ? parseFloat(balanceData.formatted) : 0;
@@ -103,23 +120,23 @@ const SidebarContent = () => {
               </div>
             )}
           </div>
-          {isWrongNetwork ? (
+          <div className="mt-4 space-y-2">
             <button
-              onClick={() => switchChain?.({ chainId: reactiveTestnet.id })}
+              onClick={() => switchChain?.({ chainId: targetChainId })}
               type="button"
-              className="w-full mt-4 bg-yellow-500 text-black font-black uppercase text-xs tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-2"
+              className="w-full bg-[#7DF9FF] text-black font-black uppercase text-xs tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-2 flex items-center justify-center gap-2 leading-tight"
             >
-              WRONG NETWORK
+              <Network size={16} strokeWidth={3} />
+              <span>{networkButtonLabel}</span>
             </button>
-          ) : (
             <button
               onClick={() => disconnect()}
               type="button"
-              className="w-full mt-4 bg-red-500 text-white font-black uppercase text-xs tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-2"
+              className="w-full bg-red-500 text-white font-black uppercase text-xs tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all px-2 py-2"
             >
               DISCONNECT
             </button>
-          )}
+          </div>
         </div>
       )}
 

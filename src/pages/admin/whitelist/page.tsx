@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useReadContract } from "wagmi";
 import { useSetWhitelistedCreator } from "@/lib/hooks/useAdminActions";
 import { PresaleFactory } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -15,13 +16,14 @@ import { ArrowLeft, UserPlus, UserMinus, Check, X, Search } from "lucide-react";
 function WhitelistChecker() {
   const [checkAddress, setCheckAddress] = useState("");
   const [addressToCheck, setAddressToCheck] = useState<Address | null>(null);
+  const { presaleFactory } = useChainContracts();
 
   const {
     data: isWhitelisted,
     isLoading,
     refetch,
   } = useReadContract({
-    address: PresaleFactory.address as Address,
+    address: presaleFactory,
     abi: PresaleFactory.abi,
     functionName: "whitelistedCreators",
     args: addressToCheck ? [addressToCheck] : undefined,

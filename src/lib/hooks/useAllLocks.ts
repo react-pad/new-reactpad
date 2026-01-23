@@ -1,4 +1,5 @@
 import { TokenLocker } from '@/config';
+import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { useMemo } from 'react';
 import { erc20Abi, formatUnits, type Address, type Abi } from 'viem';
 import { useReadContracts } from 'wagmi';
@@ -16,6 +17,7 @@ interface LockResult {
 }
 
 export function useAllLocks(forceRefetch = false) {
+  const { tokenLocker } = useChainContracts();
   const { lockIds, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks(forceRefetch);
 
   const lockQueries = useMemo(() => {
@@ -23,12 +25,12 @@ export function useAllLocks(forceRefetch = false) {
     return (lockIds as bigint[]).flatMap(lockId => [
       {
         abi: TokenLocker.abi as Abi,
-        address: TokenLocker.address,
+        address: tokenLocker,
         functionName: 'getLock',
         args: [lockId],
       }
     ]);
-  }, [lockIds]);
+  }, [lockIds, tokenLocker]);
 
   const { data: lockData, isLoading: isLoadingLockData, refetch: refetchLockData } = useReadContracts({
     contracts: lockQueries,

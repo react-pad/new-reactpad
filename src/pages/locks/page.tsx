@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { TokenLocker, EXPLORER_URL } from "@/config";
+import { TokenLocker } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { formatDistanceToNow } from "date-fns";
 import { Link, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
-import { erc20Abi, formatUnits, type Abi } from "viem";
+import { erc20Abi, formatUnits, type Abi, type Address } from "viem";
 import { useReadContract } from "wagmi";
 import { Lock, Search, ArrowRight, ExternalLink, Eye, Clock, CheckCircle2 } from "lucide-react";
 
@@ -66,9 +67,15 @@ function LockSearchCard() {
     );
 }
 
-function RecentLockCard({ lockId }: { lockId: bigint }) {
+function RecentLockCard({
+    lockId,
+    tokenLocker,
+}: {
+    lockId: bigint;
+    tokenLocker: Address;
+}) {
     const { data: lockInfo, isLoading } = useReadContract({
-        address: TokenLocker.address,
+        address: tokenLocker,
         abi: TokenLocker.abi as Abi,
         functionName: 'getLock',
         args: [lockId],
@@ -200,8 +207,9 @@ function RecentLockCard({ lockId }: { lockId: bigint }) {
 }
 
 export default function LocksPage() {
+    const { explorerUrl, tokenLocker } = useChainContracts();
     const { data: totalLocksCount, isLoading: isLoadingTotal } = useReadContract({
-        address: TokenLocker.address,
+        address: tokenLocker,
         abi: TokenLocker.abi as Abi,
         functionName: 'totalLocks',
     });
@@ -242,12 +250,12 @@ export default function LocksPage() {
                     <CardContent className="p-6 text-center">
                         <p className="text-xs text-gray-500 uppercase font-bold">Contract Address</p>
                         <a 
-                            href={`${EXPLORER_URL}/address/${TokenLocker.address}`}
+                            href={`${explorerUrl}/address/${tokenLocker}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-mono text-xs hover:underline flex items-center justify-center gap-1 mt-2"
                         >
-                            {TokenLocker.address.slice(0, 10)}...{TokenLocker.address.slice(-8)}
+                            {tokenLocker.slice(0, 10)}...{tokenLocker.slice(-8)}
                             <ExternalLink className="w-3 h-3" />
                         </a>
                     </CardContent>
@@ -293,7 +301,11 @@ export default function LocksPage() {
                 ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {recentLockIds.map(lockId => (
-                            <RecentLockCard key={lockId.toString()} lockId={lockId} />
+                            <RecentLockCard
+                                key={lockId.toString()}
+                                lockId={lockId}
+                                tokenLocker={tokenLocker}
+                            />
                         ))}
                     </div>
                 )}
@@ -318,4 +330,3 @@ export default function LocksPage() {
         </div>
     );
 }
-

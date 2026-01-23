@@ -3,16 +3,18 @@
  * Admin is determined by the factoryOwner on the PresaleFactory contract
  */
 
-import { useReadContract } from 'wagmi';
+import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { PresaleFactory } from '@/config';
+import { useReadContract } from 'wagmi';
 import type { Address } from 'viem';
 
 /**
  * Hook to get the factory owner address
  */
 export function useFactoryOwner() {
+  const { presaleFactory } = useChainContracts();
   const { data: factoryOwner, isLoading, refetch } = useReadContract({
-    address: PresaleFactory.address as Address,
+    address: presaleFactory,
     abi: PresaleFactory.abi,
     functionName: 'factoryOwner',
     query: {
@@ -31,8 +33,9 @@ export function useFactoryOwner() {
  * Hook to get the fee recipient address
  */
 export function useFeeRecipient() {
+  const { presaleFactory } = useChainContracts();
   const { data: feeRecipient, isLoading, refetch } = useReadContract({
-    address: PresaleFactory.address as Address,
+    address: presaleFactory,
     abi: PresaleFactory.abi,
     functionName: 'feeRecipient',
     query: {

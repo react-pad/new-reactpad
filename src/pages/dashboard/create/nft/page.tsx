@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NFTFactoryContract } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { parseEther } from "viem";
@@ -11,6 +12,7 @@ import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagm
 
 export default function CreateNftPage() {
     const { address } = useAccount();
+    const { nftFactory } = useChainContracts();
     const { data: hash, writeContract, isPending, error } = useWriteContract();
 
     const [name, setName] = useState("");
@@ -53,7 +55,7 @@ export default function CreateNftPage() {
         const args: unknown[] = isETH ? [params] : [params, paymentToken as `0x${string}`];
 
         writeContract({
-            address: NFTFactoryContract.address as `0x${string}`,
+            address: nftFactory,
             abi: NFTFactoryContract.abi,
             functionName,
             args: args as never

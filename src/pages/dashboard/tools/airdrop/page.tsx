@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { AirdropMultisenderContract } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import {
 export default function AirdropPage() {
   const [searchParams] = useSearchParams();
   const { address } = useAccount();
+  const { airdropMultisender } = useChainContracts();
 
   const {
     data: sendHash,
@@ -174,7 +176,7 @@ export default function AirdropPage() {
     abi: erc20Abi,
     address: normalizedTokenAddress,
     functionName: "allowance",
-    args: [address!, AirdropMultisenderContract.address as `0x${string}`],
+    args: [address!, airdropMultisender],
     query: {
       enabled: !!address && isValidTokenAddress && sendType === "erc20",
     },
@@ -201,7 +203,7 @@ export default function AirdropPage() {
       address: normalizedTokenAddress,
       abi: erc20Abi,
       functionName: "approve",
-      args: [AirdropMultisenderContract.address as `0x${string}`, maxUint256],
+      args: [airdropMultisender, maxUint256],
     });
   };
 
@@ -218,7 +220,7 @@ export default function AirdropPage() {
 
     if (sendType === "react") {
       sendTokens({
-        address: AirdropMultisenderContract.address as `0x${string}`,
+        address: airdropMultisender,
         abi: AirdropMultisenderContract.abi,
         functionName: "sendETH",
         args: [parsedRecipients.recipients, parsedRecipients.amounts],
@@ -226,7 +228,7 @@ export default function AirdropPage() {
       });
     } else {
       sendTokens({
-        address: AirdropMultisenderContract.address as `0x${string}`,
+        address: airdropMultisender,
         abi: AirdropMultisenderContract.abi,
         functionName: "sendERC20",
         args: [

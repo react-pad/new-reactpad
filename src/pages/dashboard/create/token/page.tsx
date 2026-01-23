@@ -9,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TokenFactory, EXPLORER_URL } from "@/config";
+import { TokenFactory } from "@/config";
+import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { decodeEventLog, parseUnits } from "viem";
@@ -29,6 +30,7 @@ type TokenType = typeof TokenType[keyof typeof TokenType];
 
 export default function CreateTokenPage() {
   const { address } = useAccount();
+  const { explorerUrl, tokenFactory } = useChainContracts();
   const { data: hash, writeContract, isPending, error, reset } = useWriteContract();
 
   const [tokenType, setTokenType] = useState<TokenType>(TokenType.Plain);
@@ -94,7 +96,7 @@ export default function CreateTokenPage() {
     }
 
     writeContract({
-      address: TokenFactory.address as `0x${string}`,
+      address: tokenFactory,
       abi: TokenFactory.abi,
       functionName,
       args: args as never,
@@ -182,7 +184,7 @@ export default function CreateTokenPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <a 
-                href={`${EXPLORER_URL}/address/${createdTokenAddress}`}
+                href={`${explorerUrl}/address/${createdTokenAddress}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"

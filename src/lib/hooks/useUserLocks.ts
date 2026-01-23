@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { TokenLocker } from '@/config';
+import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 
 export function useUserLocks(forceRefetch = false) {
   const { address } = useAccount();
+  const { tokenLocker } = useChainContracts();
 
   const {
     getUserLocks,
@@ -19,7 +21,7 @@ export function useUserLocks(forceRefetch = false) {
 
   const { data: lockIds, isLoading, refetch } = useReadContract({
     abi: TokenLocker.abi,
-    address: TokenLocker.address,
+    address: tokenLocker,
     functionName: 'locksOfOwner',
     args: [address as `0x${string}`],
     query: {
