@@ -283,26 +283,28 @@ function CreatePresaleForm({
           onChange={handleChange}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="startTime">Start Time</Label>
-          <Input
-            id="startTime"
-            type="datetime-local"
-            value={startTime}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="endTime">End Time</Label>
-          <Input
-            id="endTime"
-            type="datetime-local"
-            value={endTime}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
+    <div className="grid grid-cols-2 gap-3">
+  <div className="space-y-2 min-w-0">
+    <Label htmlFor="startTime">Start Time</Label>
+    <Input
+      id="startTime"
+      type="datetime-local"
+      className="w-full min-w-0"
+      value={startTime}
+      onChange={handleChange}
+    />
+  </div>
+  <div className="space-y-2 min-w-0">
+    <Label htmlFor="endTime">End Time</Label>
+    <Input
+      id="endTime"
+      type="datetime-local"
+      className="w-full min-w-0"
+      value={endTime}
+      onChange={handleChange}
+    />
+  </div>
+</div>
       <div className="space-y-2">
         <Label htmlFor="saleAmount">Total Tokens for Sale</Label>
         <Input
