@@ -283,13 +283,13 @@ function CreatePresaleForm({
           onChange={handleChange}
         />
       </div>
-    <div className="grid grid-cols-2 gap-3 min-w-0">
+    <div className="flex gap-3">
   <div className="space-y-2 min-w-0">
     <Label htmlFor="startTime">Start Time</Label>
     <Input
       id="startTime"
       type="datetime-local"
-      className="w-full min-w-0"
+      className="w-1/2 max-w-[50%]"
       value={startTime}
       onChange={handleChange}
     />
@@ -299,7 +299,7 @@ function CreatePresaleForm({
     <Input
       id="endTime"
       type="datetime-local"
-      className="w-full min-w-0"
+      className="w-1/2 max-w-[50%]"
       value={endTime}
       onChange={handleChange}
     />
