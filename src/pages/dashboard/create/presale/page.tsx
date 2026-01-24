@@ -283,7 +283,7 @@ function CreatePresaleForm({
           onChange={handleChange}
         />
       </div>
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3 min-w-0">
   <div className="space-y-2 min-w-0">
     <Label htmlFor="startTime">Start Time</Label>
     <Input
