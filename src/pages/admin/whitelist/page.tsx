@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { isAddress, type Address } from "viem";
 import { ArrowLeft, UserPlus, UserMinus, Check, X, Search } from "lucide-react";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 
 function WhitelistChecker() {
   const [checkAddress, setCheckAddress] = useState("");
@@ -139,7 +140,7 @@ function WhitelistManager() {
 
   useEffect(() => {
     if (isAddError && addError) {
-      toast.error(`Failed to add creator: ${addError.message}`);
+      toast.error(getFriendlyTxErrorMessage(addError, "Whitelist update"));
       resetAdd();
     }
   }, [isAddError, addError, resetAdd]);
@@ -154,7 +155,7 @@ function WhitelistManager() {
 
   useEffect(() => {
     if (isRemoveError && removeError) {
-      toast.error(`Failed to remove creator: ${removeError.message}`);
+      toast.error(getFriendlyTxErrorMessage(removeError, "Whitelist update"));
       resetRemove();
     }
   }, [isRemoveError, removeError, resetRemove]);

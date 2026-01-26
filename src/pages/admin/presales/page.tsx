@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { formatEther, type Address, erc20Abi } from "viem";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
 
 function PresaleCard({
@@ -66,7 +67,7 @@ function PresaleCard({
 
   useEffect(() => {
     if (isError && error) {
-      toast.error(`Failed to update fees: ${error.message}`);
+      toast.error(getFriendlyTxErrorMessage(error, "Update fees"));
       reset();
     }
   }, [isError, error, reset]);

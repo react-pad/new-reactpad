@@ -17,6 +17,7 @@ import { decodeEventLog, parseUnits } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Coins, ExternalLink, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 
 const TokenType = {
   Plain: 0,
@@ -111,7 +112,7 @@ export default function CreateTokenPage() {
   // Handle transaction states
   useEffect(() => {
     if (error) {
-      toast.error(error.message);
+      toast.error(getFriendlyTxErrorMessage(error, "Token creation"));
       reset();
     }
   }, [error, reset]);

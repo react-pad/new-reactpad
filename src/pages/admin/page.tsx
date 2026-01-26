@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { isAddress, type Address } from "viem";
 import { Users, Coins, Settings, ArrowRight } from "lucide-react";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 
 function AdminDashboardContent() {
   const { address } = useAccount();
@@ -39,7 +40,7 @@ function AdminDashboardContent() {
 
   useEffect(() => {
     if (isFeeRecipientError && feeRecipientError) {
-      toast.error(`Failed to update fee recipient: ${feeRecipientError.message}`);
+      toast.error(getFriendlyTxErrorMessage(feeRecipientError, "Update fee recipient"));
       resetFeeRecipient();
     }
   }, [isFeeRecipientError, feeRecipientError, resetFeeRecipient]);

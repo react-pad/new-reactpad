@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { erc20Abi, formatUnits, maxUint256, parseUnits } from "viem";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 import {
   useAccount,
   useBalance,
@@ -285,14 +286,14 @@ export default function AirdropPage() {
 
   useEffect(() => {
     if (approveError) {
-      toast.error(`Approval failed: ${approveError.message.slice(0, 100)}`);
+      toast.error(getFriendlyTxErrorMessage(approveError, "Approval"));
     }
   }, [approveError]);
 
   useEffect(() => {
     if (sendError) {
       console.error("Send error:", sendError);
-      toast.error(`Send failed: ${sendError.message.slice(0, 100)}`);
+      toast.error(getFriendlyTxErrorMessage(sendError, "Transfer"));
     }
   }, [sendError]);
 

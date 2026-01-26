@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { TokenLocker } from "@/config";
 import { useChainContracts } from "@/lib/hooks/useChainContracts";
 import { useAllLocks } from "@/lib/hooks/useAllLocks";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 import { formatDistanceToNow, format } from "date-fns";
 import { useSearchParams, Link } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -489,7 +490,7 @@ function CreateLockModal({
 
   useEffect(() => {
     if (approveError) {
-      toast.error(`Approval failed: ${approveError.message}`);
+      toast.error(getFriendlyTxErrorMessage(approveError, "Approval"));
     }
   }, [approveError]);
 
@@ -537,7 +538,7 @@ function CreateLockModal({
       ) {
         toast.error("Insufficient token balance.");
       } else {
-        toast.error(`Lock failed: ${errorMessage.slice(0, 150)}`);
+        toast.error(getFriendlyTxErrorMessage(lockError, "Lock"));
       }
       resetLock();
     }
@@ -736,7 +737,7 @@ function ExtendLockModal({
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message);
+      toast.error(getFriendlyTxErrorMessage(error, "Extend lock"));
     }
   }, [error]);
 
@@ -832,7 +833,7 @@ function TransferLockModal({
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message);
+      toast.error(getFriendlyTxErrorMessage(error, "Transfer lock"));
     }
   }, [error]);
 

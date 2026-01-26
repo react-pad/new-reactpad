@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { parseEther } from "viem";
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from "wagmi";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 
 export default function CreateNftPage() {
     const { address } = useAccount();
@@ -69,7 +70,7 @@ export default function CreateNftPage() {
             toast.success("NFT Collection created successfully!");
         }
         if (error) {
-            toast.error(error.message);
+            toast.error(getFriendlyTxErrorMessage(error, "NFT creation"));
         }
     }, [isConfirmed, error])
 

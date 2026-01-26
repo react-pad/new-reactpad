@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { erc20Abi, formatUnits, isAddress, type Address } from "viem";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 import {
   useAccount,
   useReadContract,
@@ -311,19 +312,27 @@ function ManagePresaleView({
     useWaitForTransactionReceipt({ hash: whitelistHash });
 
   useEffect(() => {
-    if (approveError) toast.error(approveError.message);
+    if (approveError) {
+      toast.error(getFriendlyTxErrorMessage(approveError, "Approval"));
+    }
   }, [approveError]);
 
   useEffect(() => {
-    if (depositError) toast.error(depositError.message);
+    if (depositError) {
+      toast.error(getFriendlyTxErrorMessage(depositError, "Deposit"));
+    }
   }, [depositError]);
 
   useEffect(() => {
-    if (ownerActionError) toast.error(ownerActionError.message);
+    if (ownerActionError) {
+      toast.error(getFriendlyTxErrorMessage(ownerActionError, "Action"));
+    }
   }, [ownerActionError]);
 
   useEffect(() => {
-    if (whitelistError) toast.error(whitelistError.message);
+    if (whitelistError) {
+      toast.error(getFriendlyTxErrorMessage(whitelistError, "Whitelist update"));
+    }
   }, [whitelistError]);
 
   useEffect(() => {

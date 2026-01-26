@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { formatUnits, parseUnits } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { toast } from "sonner";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -188,13 +189,13 @@ export function PresaleParticipationForm({
   // Handle errors
   useEffect(() => {
     if (claimTokensError) {
-      toast.error(claimTokensError.message);
+      toast.error(getFriendlyTxErrorMessage(claimTokensError, "Claim"));
     }
   }, [claimTokensError]);
 
   useEffect(() => {
     if (claimRefundError) {
-      toast.error(claimRefundError.message);
+      toast.error(getFriendlyTxErrorMessage(claimRefundError, "Refund"));
     }
   }, [claimRefundError]);
 
@@ -532,7 +533,11 @@ export function PresaleParticipationForm({
         </div>
       )}
 
-      {error && <p className="text-red-500 text-sm">Error: {error.message}</p>}
+      {error && (
+        <p className="text-red-500 text-sm">
+          {getFriendlyTxErrorMessage(error, "Contribution")}
+        </p>
+      )}
 
       {/* Claim Section - Always visible if user has tokens */}
       {renderClaimSection()}

@@ -7,6 +7,7 @@ import { useChainContracts } from "@/lib/hooks/useChainContracts";
 // LaunchpadService removed - data is now stored only on blockchain
 import { useBlockchainStore } from "@/lib/store/blockchain-store";
 import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
+import { getFriendlyTxErrorMessage } from "@/lib/utils/tx-errors";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -238,7 +239,7 @@ function CreatePresaleForm({
 
   useEffect(() => {
     if (error) {
-      toast.error(error.message);
+      toast.error(getFriendlyTxErrorMessage(error, "Presale creation"));
     }
   }, [error]);
 
