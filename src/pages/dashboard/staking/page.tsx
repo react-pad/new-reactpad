@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { StakingContract } from "@/config";
+import { getStakingContractAddress, StakingContract } from "@/config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
   Coins,
@@ -20,6 +20,7 @@ import {
 } from "viem";
 import {
   useAccount,
+  useChainId,
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -28,7 +29,9 @@ import {
 export default function StakingPage() {
   const { openConnectModal } = useConnectModal();
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const { writeContractAsync } = useWriteContract();
+  const stakingContractAddress = getStakingContractAddress(chainId);
 
   const [activeTab, setActiveTab] = useState<"stake" | "unstake">("stake");
   const [stakeAmount, setStakeAmount] = useState("");
@@ -50,14 +53,14 @@ export default function StakingPage() {
 
   // Read staking token address
   const { data: stakingTokenAddress } = useReadContract({
-    address: StakingContract.address as Address,
+    address: stakingContractAddress,
     abi: StakingContract.abi as Abi,
     functionName: "stakingToken",
   });
 
   // Read rewards token address
   const { data: rewardsTokenAddress } = useReadContract({
-    address: StakingContract.address as Address,
+    address: stakingContractAddress,
     abi: StakingContract.abi as Abi,
     functionName: "rewardsToken",
   });
@@ -106,13 +109,13 @@ export default function StakingPage() {
     abi: erc20Abi,
     address: stakingTokenAddress as Address,
     functionName: "allowance",
-    args: address ? [address, StakingContract.address as Address] : undefined,
+    args: address ? [address, stakingContractAddress] : undefined,
     query: { enabled: !!address && !!stakingTokenAddress },
   });
 
   // Read user's staked balance
   const { data: stakedBalance, refetch: refetchStakedBalance } = useReadContract({
-    address: StakingContract.address as Address,
+    address: stakingContractAddress,
     abi: StakingContract.abi as Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
@@ -121,7 +124,7 @@ export default function StakingPage() {
 
   // Read pending rewards
   const { data: pendingRewards, refetch: refetchPendingRewards } = useReadContract({
-    address: StakingContract.address as Address,
+    address: stakingContractAddress,
     abi: StakingContract.abi as Abi,
     functionName: "pendingRewards",
     args: address ? [address] : undefined,
@@ -296,7 +299,7 @@ export default function StakingPage() {
         address: stakingTokenAddress as Address,
         abi: erc20Abi,
         functionName: "approve",
-        args: [StakingContract.address as Address, amount],
+        args: [stakingContractAddress, amount],
       });
 
       setApprovalHash(hash);
@@ -316,7 +319,7 @@ export default function StakingPage() {
       const amount = parseUnits(stakeAmount, decimals);
 
       const hash = await writeContractAsync({
-        address: StakingContract.address as Address,
+        address: stakingContractAddress,
         abi: StakingContract.abi as Abi,
         functionName: "stake",
         args: [amount],
@@ -339,7 +342,7 @@ export default function StakingPage() {
       const amount = parseUnits(unstakeAmount, decimals);
 
       const hash = await writeContractAsync({
-        address: StakingContract.address as Address,
+        address: stakingContractAddress,
         abi: StakingContract.abi as Abi,
         functionName: "withdraw",
         args: [amount],
@@ -361,7 +364,7 @@ export default function StakingPage() {
       setIsClaiming(true);
 
       const hash = await writeContractAsync({
-        address: StakingContract.address as Address,
+        address: stakingContractAddress,
         abi: StakingContract.abi as Abi,
         functionName: "getReward",
         args: [],

@@ -79,6 +79,18 @@ export const CONTRACT_ADDRESSES_BY_CHAIN: Record<number, ContractAddressMap> = {
     },
 };
 
+export const STAKING_CONTRACT_ADDRESSES_BY_CHAIN: Record<number, Address> = {
+    [REACTIVE_MAINNET_CHAIN_ID]: "0x0477ad36299E215bcb7a88fDc1f20C56405cB9b4" as Address,
+    [REACTIVE_TESTNET_CHAIN_ID]: "0x5cE08fB8DE00059cCf4bC8a8FA85d74Ec92784D3" as Address,
+};
+
+export const getStakingContractAddress = (chainId?: number) => {
+    if (chainId && STAKING_CONTRACT_ADDRESSES_BY_CHAIN[chainId]) {
+        return STAKING_CONTRACT_ADDRESSES_BY_CHAIN[chainId];
+    }
+    return STAKING_CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID];
+};
+
 export const getContractAddresses = (chainId?: number) => {
     if (chainId && CONTRACT_ADDRESSES_BY_CHAIN[chainId]) {
         return CONTRACT_ADDRESSES_BY_CHAIN[chainId];
@@ -776,7 +788,8 @@ export const Multicall3Contract = {
 } as const;
 
 export const StakingContract = {
-    address: "0x5cE08fB8DE00059cCf4bC8a8FA85d74Ec92784D3",
+    address: STAKING_CONTRACT_ADDRESSES_BY_CHAIN[REACTIVE_MAINNET_CHAIN_ID],
+    addressesByChain: STAKING_CONTRACT_ADDRESSES_BY_CHAIN,
     abi: [
         {
             "inputs": [
