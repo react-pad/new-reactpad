@@ -222,6 +222,9 @@ export default function UserDashboardPage() {
   const { tokens: createdTokens, isLoading, refetch } = useUserTokens();
   const { presales, isLoading: isLoadingPresales } = useLaunchpadPresales('all', false);
   const { locks: userLocks, isLoading: isLoadingLocks, refetch: refetchLocks } = useAllLocks();
+  const { isWhitelisted, isLoading: isLoadingWhitelist } = useWhitelistedCreator(
+    address as Address | undefined
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tokenPage, setTokenPage] = useState(0);
   const navigate = useNavigate();
@@ -246,6 +249,12 @@ export default function UserDashboardPage() {
     refetch();
     refetchLocks();
   };
+
+  useEffect(() => {
+    if (isWhitelisted && isModalOpen) {
+      setIsModalOpen(false);
+    }
+  }, [isWhitelisted, isModalOpen]);
 
   if (!isConnected) {
     return (
@@ -390,37 +399,51 @@ export default function UserDashboardPage() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-gray-600 mb-4 text-base sm:text-lg font-medium">No presales yet</p>
-                <Button onClick={() => setIsModalOpen(true)} className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]">
-                  Create Presale
-                </Button>
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                  <DialogPortal>
-                    <DialogOverlay className="bg-black/70 backdrop-blur-sm" />
-                    <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border-4 border-black bg-white p-6 shadow-[8px_8px_0_rgba(0,0,0,1)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-none">
-                      <DialogHeader>
-                        <DialogTitle className="font-black uppercase tracking-wider text-xl">Before You Continue</DialogTitle>
-                        <DialogDescription className="text-gray-600">
-                          Please make sure to fill out all required fields in the form before proceeding. This will help ensure your presale is created successfully.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter className="gap-2">
-                        <Button variant="outline" onClick={() => setIsModalOpen(false)} className="border-2 border-black font-bold uppercase">
-                          Cancel
-                        </Button>
-                        <Button onClick={() => {
-                          setIsModalOpen(false);
-                          navigate("/dashboard/create/project");
-                        }} className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase shadow-[3px_3px_0_rgba(0,0,0,1)]">
-                          Continue to Form
-                        </Button>
-                      </DialogFooter>
-                      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Close</span>
-                      </DialogPrimitive.Close>
-                    </DialogPrimitive.Content>
-                  </DialogPortal>
-                </Dialog>
+                {isLoadingWhitelist ? (
+                  <Button disabled className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] opacity-70">
+                    Checking Whitelist...
+                  </Button>
+                ) : isWhitelisted ? (
+                  <Link to="/dashboard/create/presale">
+                    <Button className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]">
+                      Create Presale
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Button onClick={() => setIsModalOpen(true)} className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)]">
+                      Create Presale
+                    </Button>
+                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                      <DialogPortal>
+                        <DialogOverlay className="bg-black/70 backdrop-blur-sm" />
+                        <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border-4 border-black bg-white p-6 shadow-[8px_8px_0_rgba(0,0,0,1)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-none">
+                          <DialogHeader>
+                            <DialogTitle className="font-black uppercase tracking-wider text-xl">Before You Continue</DialogTitle>
+                            <DialogDescription className="text-gray-600">
+                              Please make sure to fill out all required fields in the form before proceeding. This will help ensure your presale is created successfully.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter className="gap-2">
+                            <Button variant="outline" onClick={() => setIsModalOpen(false)} className="border-2 border-black font-bold uppercase">
+                              Cancel
+                            </Button>
+                            <Button onClick={() => {
+                              setIsModalOpen(false);
+                              navigate("/dashboard/create/project");
+                            }} className="border-4 border-black bg-[#7DF9FF] text-black font-black uppercase shadow-[3px_3px_0_rgba(0,0,0,1)]">
+                              Continue to Form
+                            </Button>
+                          </DialogFooter>
+                          <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Close</span>
+                          </DialogPrimitive.Close>
+                        </DialogPrimitive.Content>
+                      </DialogPortal>
+                    </Dialog>
+                  </>
+                )}
               </div>
             )}
           </CardContent>
