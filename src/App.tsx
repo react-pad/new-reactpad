@@ -5,6 +5,7 @@ import CreateHubPage from "./pages/dashboard/create/page";
 import CreatePresalePage from "./pages/dashboard/create/presale/page";
 import CreateProjectPage from "./pages/dashboard/create/project/page";
 import CreateTokenPage from "./pages/dashboard/create/token/page";
+import PresalesListPage from "./pages/dashboard/presales/page";
 import ManagePresalePage from "./pages/dashboard/presales/manage/page";
 import StakingPage from "./pages/dashboard/staking/page";
 import AirdropPage from "./pages/dashboard/tools/airdrop/page";
@@ -33,6 +34,7 @@ function App() {
             <Route path="/dashboard/create/presale" element={<CreatePresalePage />} />
             <Route path="/dashboard/create/project" element={<CreateProjectPage />} />
             <Route path="/dashboard/create/token" element={<CreateTokenPage />} />
+            <Route path="/dashboard/presales" element={<PresalesListPage />} />
             <Route path="/dashboard/presales/manage/:address" element={<ManagePresalePage />} />
             <Route path="/dashboard/staking" element={<StakingPage />} />
             <Route path="/dashboard/tools/airdrop" element={<AirdropPage />} />
