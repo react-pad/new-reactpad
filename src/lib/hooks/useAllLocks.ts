@@ -16,6 +16,8 @@ interface LockResult {
   description: string;
 }
 
+const AUTO_REFRESH_INTERVAL = 10000;
+
 export function useAllLocks(forceRefetch = false) {
   const { tokenLocker } = useChainContracts();
   const { lockIds, isLoading: isLoadingLocks, refetch: refetchLocks } = useUserLocks(forceRefetch);
@@ -36,6 +38,9 @@ export function useAllLocks(forceRefetch = false) {
     contracts: lockQueries,
     query: {
       enabled: !!lockIds && lockIds.length > 0,
+      refetchInterval: lockQueries.length > 0 ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     }
   });
 

@@ -4,6 +4,8 @@ import { TokenFactory } from '../../config';
 import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 
+const AUTO_REFRESH_INTERVAL = 10000;
+
 export function useUserTokens(forceRefetch = false) {
   const { address } = useAccount();
   const { tokenFactory } = useChainContracts();
@@ -12,12 +14,10 @@ export function useUserTokens(forceRefetch = false) {
     getUserTokens,
     setUserTokens,
     setUserTokensLoading,
-    isUserTokensStale,
   } = useBlockchainStore();
 
   const cachedTokens = address ? getUserTokens(address) : null;
-  const isStale = address ? isUserTokensStale(address) : true;
-  const shouldFetch = address && (isStale || forceRefetch || !cachedTokens);
+  const shouldFetch = Boolean(address);
 
   const { data: tokens, isLoading, refetch } = useReadContract({
     abi: TokenFactory.abi,
@@ -26,6 +26,9 @@ export function useUserTokens(forceRefetch = false) {
     args: [address as `0x${string}`],
     query: {
       enabled: shouldFetch,
+      refetchInterval: shouldFetch ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
@@ -42,6 +45,12 @@ export function useUserTokens(forceRefetch = false) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [address, tokens, isLoading]);
+
+  useEffect(() => {
+    if (forceRefetch && address) {
+      refetch();
+    }
+  }, [forceRefetch, address, refetch]);
 
   const handleRefetch = async () => {
     if (address) {

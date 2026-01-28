@@ -4,6 +4,8 @@ import { TokenLocker } from '@/config';
 import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { useBlockchainStore } from '@/lib/store/blockchain-store';
 
+const AUTO_REFRESH_INTERVAL = 10000;
+
 export function useUserLocks(forceRefetch = false) {
   const { address } = useAccount();
   const { tokenLocker } = useChainContracts();
@@ -12,12 +14,10 @@ export function useUserLocks(forceRefetch = false) {
     getUserLocks,
     setUserLocks,
     setUserLocksLoading,
-    isUserLocksStale,
   } = useBlockchainStore();
 
   const cachedLockIds = address ? getUserLocks(address) : null;
-  const isStale = address ? isUserLocksStale(address) : true;
-  const shouldFetch = address && (isStale || forceRefetch || !cachedLockIds);
+  const shouldFetch = Boolean(address);
 
   const { data: lockIds, isLoading, refetch } = useReadContract({
     abi: TokenLocker.abi,
@@ -26,6 +26,9 @@ export function useUserLocks(forceRefetch = false) {
     args: [address as `0x${string}`],
     query: {
       enabled: shouldFetch,
+      refetchInterval: shouldFetch ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
@@ -40,6 +43,12 @@ export function useUserLocks(forceRefetch = false) {
       setUserLocks(address, lockIds as bigint[]);
     }
   }, [address, lockIds, isLoading, setUserLocks]);
+
+  useEffect(() => {
+    if (forceRefetch && address) {
+      refetch();
+    }
+  }, [forceRefetch, address, refetch]);
 
   const handleRefetch = async () => {
     if (address) {

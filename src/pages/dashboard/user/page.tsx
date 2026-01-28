@@ -9,7 +9,7 @@ import { useUserTokens } from "@/lib/hooks/useUserTokens";
 import { useWhitelistedCreator } from "@/lib/hooks/useWhitelistedCreator";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, FileText, Lock, Plus, RefreshCw, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, ExternalLink, FileText, Lock, Plus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { Address } from "viem";
@@ -219,9 +219,9 @@ function LockPreviewCard({ lock }: { lock: { id: bigint; token: `0x${string}`; a
 
 export default function UserDashboardPage() {
   const { address, isConnected } = useAccount();
-  const { tokens: createdTokens, isLoading, refetch } = useUserTokens();
+  const { tokens: createdTokens, isLoading } = useUserTokens();
   const { presales, isLoading: isLoadingPresales } = useLaunchpadPresales('all', false);
-  const { locks: userLocks, isLoading: isLoadingLocks, refetch: refetchLocks } = useAllLocks();
+  const { locks: userLocks, isLoading: isLoadingLocks } = useAllLocks();
   const { isWhitelisted, isLoading: isLoadingWhitelist } = useWhitelistedCreator(
     address as Address | undefined
   );
@@ -245,10 +245,6 @@ export default function UserDashboardPage() {
 
   const activeLocks = [...(userLocks?.filter(l => !l.withdrawn) || [])].reverse();
 
-  const handleRefresh = () => {
-    refetch();
-    refetchLocks();
-  };
 
   useEffect(() => {
     if (isWhitelisted && isModalOpen) {
@@ -285,14 +281,6 @@ export default function UserDashboardPage() {
                 {address?.slice(0, 6)}...{address?.slice(-4)}
               </p>
             </div>
-            <Button
-              onClick={handleRefresh}
-              disabled={isLoading || isLoadingPresales || isLoadingLocks}
-              className="hidden sm:flex border-4 border-black bg-white text-black font-black uppercase tracking-wider shadow-[3px_3px_0_rgba(0,0,0,1)] hover:bg-gray-100"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading || isLoadingPresales || isLoadingLocks ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
         </div>
       </div>

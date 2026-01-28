@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChainContracts } from '@/lib/hooks/useChainContracts';
 import { usePublicClient, useReadContract, useReadContracts } from 'wagmi';
 import { erc20Abi, parseAbiItem, type Abi, type Address, type PublicClient } from 'viem';
@@ -8,6 +8,8 @@ import {
   type PresaleData,
   type PresaleStatus
 } from '@/lib/store/launchpad-presale-store';
+
+const AUTO_REFRESH_INTERVAL = 10000;
 
 const PRESALE_CREATED_EVENT = parseAbiItem(
   'event PresaleCreated(address indexed creator, address indexed presale, address indexed saleToken, address paymentToken, bool requiresWhitelist)'
@@ -67,10 +69,8 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     getPresaleAddresses,
     setPresaleAddresses,
     setPresaleAddressesLoading,
-    isPresaleAddressesStale,
     setPresale,
     getPresale,
-    isPresaleStale,
     getPresaleStatus,
   } = useLaunchpadPresaleStore();
 
@@ -83,8 +83,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   }, [presaleFactory]);
 
   const cachedAddresses = getPresaleAddresses();
-  const isStale = isPresaleAddressesStale();
-  const shouldFetchAddresses = isStale || forceRefetch || !cachedAddresses;
+  const shouldFetchAddresses = Boolean(presaleFactory);
 
   // Fetch total number of presales
   const { data: totalPresales, isLoading: isLoadingTotal, refetch: refetchTotal } = useReadContract({
@@ -93,6 +92,9 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     functionName: 'totalPresales',
     query: {
       enabled: shouldFetchAddresses,
+      refetchInterval: shouldFetchAddresses ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
@@ -112,6 +114,9 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     contracts: addressQueries,
     query: {
       enabled: addressQueries.length > 0,
+      refetchInterval: addressQueries.length > 0 ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
@@ -176,9 +181,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   }, [shouldFetchAddresses, isLoadingTotal, isLoadingAddresses]);
 
   // Filter addresses that need fresh data
-  const addressesToFetch = useMemo(() => {
-    return presaleAddresses.filter((addr) => isPresaleStale(addr) || forceRefetch);
-  }, [presaleAddresses, isPresaleStale, forceRefetch]);
+  const addressesToFetch = useMemo(() => presaleAddresses, [presaleAddresses]);
 
   // Build queries for presale data
   const presaleDataQueries = useMemo(() => {
@@ -211,10 +214,13 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
       );
   }, [addressesToFetch]);
 
-  const { data: presaleDataResults, isLoading: isLoadingPresaleData } = useReadContracts({
+  const { data: presaleDataResults, isLoading: isLoadingPresaleData, refetch: refetchPresaleData } = useReadContracts({
     contracts: presaleDataQueries,
     query: {
       enabled: presaleDataQueries.length > 0,
+      refetchInterval: presaleDataQueries.length > 0 ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
 
@@ -349,13 +355,20 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     return allPresales.filter((p) => p.status === filter);
   }, [allPresales, filter]);
 
-  const refetch = async () => {
+  const refetch = useCallback(async () => {
     setPresaleAddressesLoading(true);
     await refetchTotal();
     await refetchAddresses();
-  };
+    await refetchPresaleData();
+  }, [refetchAddresses, refetchPresaleData, refetchTotal, setPresaleAddressesLoading]);
 
   const isLoading = isLoadingTotal || isLoadingAddresses || isLoadingPresaleData || isLoadingTokenInfo;
+
+  useEffect(() => {
+    if (forceRefetch) {
+      refetch();
+    }
+  }, [forceRefetch, refetch]);
 
   return {
     presales: filteredPresales,
@@ -371,7 +384,6 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
   const {
     getPresale,
     setPresale,
-    isPresaleStale,
     getPresaleStatus,
   } = useLaunchpadPresaleStore();
 
@@ -380,7 +392,7 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
   const cachedPresale = presaleAddress ? getPresale(presaleAddress) : null;
   const [requiresWhitelist, setRequiresWhitelist] = useState<boolean | undefined>(cachedPresale?.requiresWhitelist);
 
-  const shouldFetch = presaleAddress && (isPresaleStale(presaleAddress) || forceRefetch);
+  const shouldFetch = Boolean(presaleAddress);
 
   useEffect(() => {
     if (cachedPresale?.requiresWhitelist !== undefined) {
@@ -439,8 +451,17 @@ export function useLaunchpadPresale(presaleAddress: Address | undefined, forceRe
     contracts: presaleDataQueries,
     query: {
       enabled: presaleDataQueries.length > 0,
+      refetchInterval: presaleDataQueries.length > 0 ? AUTO_REFRESH_INTERVAL : false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   });
+
+  useEffect(() => {
+    if (forceRefetch && presaleAddress) {
+      refetchPresale();
+    }
+  }, [forceRefetch, presaleAddress, refetchPresale]);
 
   // Parse presale data
   const presaleData = useMemo((): PresaleData | null => {
