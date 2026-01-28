@@ -1,5 +1,6 @@
 import type { PresaleCategory, PresaleSocials } from "@/lib/store/launchpad-presale-store";
 import type { Address } from "viem";
+import reactpadLogo from "@/assets/RPAD-logo.png";
 
 export interface PresaleMetadata {
   category?: PresaleCategory;
@@ -23,6 +24,16 @@ export const presaleMetadataMap: Record<string, PresaleMetadata> = {
   //   description: "A revolutionary DeFi protocol",
   //   logo: "https://example.com/logo.png",
   // },
+  "0x7dfe076f1e5b40e07e49d6052c458a811057006f": {
+    category: "infrastructure",
+    socials: {
+      twitter: "https://x.com/reactpad",
+      telegram: "https://t.me/reactpad",
+      website: "https://reactpad.org/",
+      discord: "",
+    },
+    logo: reactpadLogo,
+  },
 };
 
 export function getPresaleMetadata(address: Address | string): PresaleMetadata | undefined {

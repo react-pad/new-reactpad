@@ -59,7 +59,7 @@ function getCategoryStyle(category?: PresaleCategory) {
         case 'defi': return { bg: 'bg-[#7DF9FF]', label: 'DeFi' };
         case 'ai': return { bg: 'bg-[#E879F9]', label: 'AI' };
         case 'gaming': return { bg: 'bg-[#FB923C]', label: 'Gaming' };
-        case 'infrastructure': return { bg: 'bg-[#A78BFA]', label: 'Infra' };
+        case 'infrastructure': return { bg: 'bg-[#3B82F6]', label: 'INFRA' };
         case 'meme': return { bg: 'bg-[#FFFF00]', label: 'Meme' };
         default: return { bg: 'bg-[#D1D5DB]', label: 'Other' };
     }
@@ -79,10 +79,10 @@ export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
 
     // Merge presale data with metadata (metadata takes precedence if available)
     const socials = {
-        twitter: presale.socials?.twitter || metadata?.socials?.twitter || defaultSocials.twitter,
-        telegram: presale.socials?.telegram || metadata?.socials?.telegram || defaultSocials.telegram,
-        discord: presale.socials?.discord || metadata?.socials?.discord || defaultSocials.discord,
-        website: presale.socials?.website || metadata?.socials?.website || defaultSocials.website,
+        twitter: presale.socials?.twitter ?? metadata?.socials?.twitter ?? defaultSocials.twitter,
+        telegram: presale.socials?.telegram ?? metadata?.socials?.telegram ?? defaultSocials.telegram,
+        discord: presale.socials?.discord ?? metadata?.socials?.discord ?? defaultSocials.discord,
+        website: presale.socials?.website ?? metadata?.socials?.website ?? defaultSocials.website,
     };
     const category = presale.category || metadata?.category;
     const customDescription = presale.description || metadata?.description;
@@ -173,42 +173,50 @@ export function PresaleCard({ presale }: { presale: PresaleWithStatus }) {
 
                 {/* Social icons */}
                 <div className="flex items-center gap-2 mb-4">
-                    <a
-                        href={socials.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
-                    >
-                        <Twitter className="w-4 h-4" />
-                    </a>
-                    <a
-                        href={socials.telegram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
-                    >
-                        <Send className="w-4 h-4" />
-                    </a>
-                    <a
-                        href={socials.discord}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
-                    >
-                        <MessageCircle className="w-4 h-4" />
-                    </a>
-                    <a
-                        href={socials.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
-                    >
-                        <Globe className="w-4 h-4" />
-                    </a>
+                    {socials.twitter && socials.twitter !== "#" && (
+                        <a
+                            href={socials.twitter}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <Twitter className="w-4 h-4" />
+                        </a>
+                    )}
+                    {socials.telegram && socials.telegram !== "#" && (
+                        <a
+                            href={socials.telegram}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <Send className="w-4 h-4" />
+                        </a>
+                    )}
+                    {socials.discord && socials.discord !== "#" && (
+                        <a
+                            href={socials.discord}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <MessageCircle className="w-4 h-4" />
+                        </a>
+                    )}
+                    {socials.website && socials.website !== "#" && (
+                        <a
+                            href={socials.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center border-2 border-black bg-white hover:bg-black hover:text-white transition-colors"
+                        >
+                            <Globe className="w-4 h-4" />
+                        </a>
+                    )}
                 </div>
 
                 <p className="font-medium mb-6 min-h-[3rem]">{description}</p>
