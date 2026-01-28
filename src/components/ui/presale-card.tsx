@@ -59,7 +59,7 @@ function getCategoryStyle(category?: PresaleCategory) {
         case 'defi': return { bg: 'bg-[#7DF9FF]', label: 'DeFi' };
         case 'ai': return { bg: 'bg-[#E879F9]', label: 'AI' };
         case 'gaming': return { bg: 'bg-[#FB923C]', label: 'Gaming' };
-        case 'infrastructure': return { bg: 'bg-[#3B82F6]', label: 'INFRA' };
+        case 'infrastructure': return { bg: 'bg-[#7DF9FF]', label: 'INFRA' };
         case 'meme': return { bg: 'bg-[#FFFF00]', label: 'Meme' };
         default: return { bg: 'bg-[#D1D5DB]', label: 'Other' };
     }

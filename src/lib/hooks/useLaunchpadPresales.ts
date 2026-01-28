@@ -72,6 +72,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
     setPresale,
     getPresale,
     getPresaleStatus,
+    presales: presaleCache,
   } = useLaunchpadPresaleStore();
 
   const publicClient = usePublicClient();
@@ -347,7 +348,7 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
         progress: Math.min(progress, 100),
       };
     }).filter((p): p is PresaleWithStatus => p !== null);
-  }, [presaleAddresses, getPresale, getPresaleStatus]);
+  }, [presaleAddresses, getPresale, getPresaleStatus, presaleCache]);
 
   // Filter presales by status
   const filteredPresales = useMemo(() => {

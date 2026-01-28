@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwapForm } from "@/components/ui/swap-form";
 import { useMarkets } from "@/lib/hooks/useMarkets";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   useLaunchpadPresale,
@@ -14,6 +14,7 @@ import { Weth9Contract } from "@/config";
 import { PresaleParticipationForm } from "@/components/ui/presale-participation-form";
 import { formatUnits } from "viem";
 import { Badge } from "@/components/ui/badge";
+import { getPresaleMetadata } from "@/config/presale-metadata";
 
 export default function ProjectDetailPage() {
   const { id } = useParams(); // This is the presale_address
@@ -22,6 +23,10 @@ export default function ProjectDetailPage() {
     isLoading: isLoadingPresale,
   } = useLaunchpadPresale(id as `0x${string}`);
   const { markets, isLoading: isLoadingMarkets } = useMarkets();
+  const metadata = useMemo(
+    () => (presale?.address ? getPresaleMetadata(presale.address) : id ? getPresaleMetadata(id) : undefined),
+    [presale?.address, id]
+  );
 
   // React purity rule: avoid calling `Date.now()` during render.
   // Keep a ticking "now" in state and update it in an effect instead.
@@ -42,6 +47,10 @@ export default function ProjectDetailPage() {
 
   if (!presale) {
     return <div className="text-center py-20">Project not found.</div>;
+  }
+
+  if (!presale.saleToken || !presale.owner) {
+    return <div className="text-center py-20">Loading project details...</div>;
   }
 
   const presaleIsActive =
@@ -232,9 +241,13 @@ export default function ProjectDetailPage() {
   return (
     <div className="container mx-auto px-4 py-12 text-black">
       <section className="mb-8 flex items-center gap-4">
-        <Avatar className="h-16 w-16">
+        <Avatar className="h-20 w-20">
           <AvatarImage
-            src={`https://api.dicebear.com/7.x/rings/svg?seed=${presale.saleToken}`}
+            src={
+              presale.logo ||
+              metadata?.logo ||
+              `https://api.dicebear.com/7.x/rings/svg?seed=${presale.saleToken}`
+            }
             alt={`${presale.saleTokenName} logo`}
           />
           <AvatarFallback>
