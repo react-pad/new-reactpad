@@ -579,9 +579,12 @@ function ManagePresaleView({
             href={explorerHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline font-medium"
+            className="underline font-medium break-all sm:break-normal"
           >
-            {presaleAddress}
+            <span className="sm:hidden">
+              {presaleAddress.slice(0, 6)}...{presaleAddress.slice(-4)}
+            </span>
+            <span className="hidden sm:inline">{presaleAddress}</span>
           </a>
         </p>
         <p className="text-gray-500 mt-2">
