@@ -66,7 +66,7 @@ export const CONTRACT_ADDRESSES_BY_CHAIN: Record<number, ContractAddressMap> = {
     [REACTIVE_MAINNET_CHAIN_ID]: {
         tokenLocker: "0x36E903d3BcF85CF2a35E489DC77089Ccd8a289d0" as Address,
         nftFactory: "0xD4D48d9044203596d52966b6e3825e9A14800B31" as Address,
-        presaleFactory: "0x20262B03e66C0b92a8cA47C29Bd77f7Ba656690f" as Address,
+        presaleFactory: "0xf9248b40facbbad68c96bece972e8580a926f27c" as Address,
         tokenFactory: "0x23B09983E7F4A13b4DB40661C8F45580C692B262" as Address,
         airdropMultisender: "0xDD3d8e4Dddab003B42a3a865E6FA3bBDDe6d23c1" as Address,
     },
