@@ -24,7 +24,7 @@ export const presaleMetadataMap: Record<string, PresaleMetadata> = {
   //   description: "A revolutionary DeFi protocol",
   //   logo: "https://example.com/logo.png",
   // },
-  "0x7dfe076f1e5b40e07e49d6052c458a811057006f": {
+  "0x843ae255dd8945022107eeb888f90c5ecadd96a2": {
     category: "infrastructure",
     socials: {
       twitter: "https://x.com/reactpad",
