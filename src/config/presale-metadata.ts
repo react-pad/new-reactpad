@@ -1,6 +1,7 @@
 import type { PresaleCategory, PresaleSocials } from "@/lib/store/launchpad-presale-store";
 import type { Address } from "viem";
 import reactpadLogo from "@/assets/RPAD-logo.png";
+import hidethegainLogo from "@/assets/Hidethegain.jpg";
 
 export interface PresaleMetadata {
   category?: PresaleCategory;
@@ -24,6 +25,16 @@ export const presaleMetadataMap: Record<string, PresaleMetadata> = {
   //   description: "A revolutionary DeFi protocol",
   //   logo: "https://example.com/logo.png",
   // },
+  "0x8b495b4171a63eb206991f546328d61e7e164b92": {
+    category: "meme",
+    socials: {
+      twitter: "https://x.com/hidethegain",
+      telegram: "https://t.me/hidethegain",
+      website: "https://Hidethegain.com",
+      discord: "",
+    },
+    logo: hidethegainLogo,
+  },
   "0x843ae255dd8945022107eeb888f90c5ecadd96a2": {
     category: "infrastructure",
     socials: {

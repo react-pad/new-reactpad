@@ -28,6 +28,17 @@ export function useCountUp(to: number, duration: number = 2000) {
   };
 
   useEffect(() => {
+    // If already animated and target changed, re-animate from current value
+    if (hasAnimated.current) {
+      startTime.current = undefined;
+      animationFrameId.current = requestAnimationFrame(animate);
+      return () => {
+        if (animationFrameId.current) {
+          cancelAnimationFrame(animationFrameId.current);
+        }
+      };
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !hasAnimated.current) {
