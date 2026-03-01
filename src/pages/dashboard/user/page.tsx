@@ -139,7 +139,7 @@ function PresaleInfo({ presaleAddress }: { presaleAddress: Address }) {
           <div className="flex justify-between text-xs mb-1">
             <span className="font-bold">{progress}% Funded</span>
             <span className="text-gray-500">
-              {formatUnits(presaleData.totalRaised, 18)} / {formatUnits(presaleData.hardCap, 18)} REACT
+              {Math.round(Number(formatUnits(presaleData.totalRaised, 18))).toLocaleString()} / {Math.round(Number(formatUnits(presaleData.hardCap, 18))).toLocaleString()} REACT
             </span>
           </div>
           <Progress value={progress} className="h-2 border border-black" />
