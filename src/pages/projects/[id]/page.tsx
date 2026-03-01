@@ -140,10 +140,10 @@ export default function ProjectDetailPage() {
                 <div>
                   <p className="font-bold">Total Raised</p>
                   <p>
-                    {formatUnits(
+                    {Math.round(Number(formatUnits(
                       presale.totalRaised,
                       presale.paymentTokenDecimals || 18
-                    )}{" "}
+                    ))).toLocaleString()}{" "}
                     {presale.paymentTokenSymbol}
                   </p>
                 </div>

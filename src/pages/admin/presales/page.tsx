@@ -132,7 +132,7 @@ function PresaleCard({
           </div>
           <div>
             <p className="text-gray-500 text-xs uppercase font-bold">Total Raised</p>
-            <p className="font-bold">{formatEther(presale.totalRaised)} REACT</p>
+            <p className="font-bold">{Math.round(Number(formatEther(presale.totalRaised))).toLocaleString()} REACT</p>
           </div>
           <div>
             <p className="text-gray-500 text-xs uppercase font-bold">Progress</p>
