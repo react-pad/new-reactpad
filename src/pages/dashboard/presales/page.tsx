@@ -66,8 +66,8 @@ function PresaleRow({ presale }: { presale: PresaleWithStatus }) {
           <div className="flex justify-between text-xs mb-1">
             <span className="font-bold">{progress}% Funded</span>
             <span className="text-gray-500">
-              {formatUnits(presale.totalRaised, 18)} /{" "}
-              {formatUnits(presale.hardCap, 18)} REACT
+              {Math.round(Number(formatUnits(presale.totalRaised, 18))).toLocaleString()} /{" "}
+              {Math.round(Number(formatUnits(presale.hardCap, 18))).toLocaleString()} REACT
             </span>
           </div>
           <Progress value={progress} className="h-2 border border-black" />
