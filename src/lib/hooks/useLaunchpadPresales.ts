@@ -353,6 +353,9 @@ export function useLaunchpadPresales(filter: LaunchpadPresaleFilter = 'all', for
   // Filter presales by status
   const filteredPresales = useMemo(() => {
     if (filter === 'all') return allPresales;
+    if (filter === 'ended') {
+      return allPresales.filter((p) => p.status === 'ended' || p.claimEnabled || p.refundsEnabled);
+    }
     return allPresales.filter((p) => p.status === filter);
   }, [allPresales, filter]);
 
