@@ -14,10 +14,8 @@ const cardStyles = [
 ];
 
 export default function Home() {
-  const {
-    allPresales,
-    isLoading: isLoadingPresales,
-  } = useLaunchpadPresales("all");
+  const { allPresales, isLoading: isLoadingPresales } =
+    useLaunchpadPresales("all");
 
   // Featured: show live and upcoming presales (prioritize live, then upcoming)
   const featuredPresales = useMemo(() => {
@@ -34,14 +32,18 @@ export default function Home() {
 
   // Count live presales
   const livePresaleCount = useMemo(() => {
-    return allPresales.filter((p) => p.status === "live" || p.status === "upcoming").length;
+    return allPresales.filter(
+      (p) => p.status === "live" || p.status === "upcoming",
+    ).length;
   }, [allPresales]);
 
   const { count: totalProjects, ref: totalProjectsRef } = useCountUp(
     allPresales.length,
   );
-  const { count: totalRaised, ref: totalRaisedRef } = useCountUp(totalRaisedValue);
-  const { count: activePresales, ref: activePresalesRef } = useCountUp(livePresaleCount);
+  const { count: totalRaised, ref: totalRaisedRef } =
+    useCountUp(totalRaisedValue);
+  const { count: activePresales, ref: activePresalesRef } =
+    useCountUp(livePresaleCount);
 
   return (
     <main className="min-h-screen bg-[#FFF9F0] text-black">
@@ -92,7 +94,8 @@ export default function Home() {
               Total Raised
             </p>
             <p ref={totalRaisedRef} className="text-6xl font-black">
-              {totalRaised < 0.01 ? "0" : totalRaised.toFixed(2)} <span className="text-2xl">REACT</span>
+              {totalRaised < 0.01 ? "0" : totalRaised.toFixed(2)}{" "}
+              <span className="text-2xl">REACT</span>
             </p>
           </div>
           <div className="bg-[#FF00F5] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 animate-fade-in-up animation-delay-600">
@@ -124,7 +127,7 @@ export default function Home() {
               <h3 className="text-2xl font-black uppercase mb-4">BACK</h3>
               <p className="font-bold text-lg">
                 Support the projects you believe in by participating in their
-                token presale.
+                Funding Round.
               </p>
             </div>
             <div className="border-4 border-black p-8 text-center bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
