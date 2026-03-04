@@ -50,6 +50,11 @@ export default function StakingPage() {
   const processedStakingHash = useRef<string | null>(null);
   const processedUnstakingHash = useRef<string | null>(null);
   const processedClaimHash = useRef<string | null>(null);
+  const rewardsAnimationFrameRef = useRef<number | null>(null);
+  const animatedPendingRewardsRef = useRef(0);
+
+  const [animatedPendingRewards, setAnimatedPendingRewards] = useState(0);
+  const [isPendingRewardsAnimating, setIsPendingRewardsAnimating] = useState(false);
 
   // Read staking token address
   const { data: stakingTokenAddress } = useReadContract({
@@ -128,7 +133,11 @@ export default function StakingPage() {
     abi: StakingContract.abi as Abi,
     functionName: "pendingRewards",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: {
+      enabled: !!address,
+      refetchInterval: 5000,
+      refetchIntervalInBackground: true,
+    },
   });
 
   // Transaction receipts
@@ -149,29 +158,87 @@ export default function StakingPage() {
   const rewardDecimals = rewardsTokenDecimals ?? 18;
 
   const formattedWalletBalance = useMemo(() => {
-    if (!walletBalance) return "0";
+    if (walletBalance === undefined || walletBalance === null) return "0";
     try {
       return Number(formatUnits(walletBalance as bigint, decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 });
     } catch { return "0"; }
   }, [walletBalance, decimals]);
 
   const formattedStakedBalance = useMemo(() => {
-    if (!stakedBalance) return "0";
+    if (stakedBalance === undefined || stakedBalance === null) return "0";
     try {
       return Number(formatUnits(stakedBalance as bigint, decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 });
     } catch { return "0"; }
   }, [stakedBalance, decimals]);
 
-  const formattedPendingRewards = useMemo(() => {
-    if (!pendingRewards) return "0";
+  const pendingRewardsValue = useMemo(() => {
+    if (pendingRewards === undefined || pendingRewards === null) return 0;
     try {
-      return Number(formatUnits(pendingRewards as bigint, rewardDecimals)).toLocaleString(undefined, { maximumFractionDigits: 6 });
-    } catch { return "0"; }
+      const value = Number(formatUnits(pendingRewards as bigint, rewardDecimals));
+      return Number.isFinite(value) ? value : 0;
+    } catch { return 0; }
   }, [pendingRewards, rewardDecimals]);
+
+  useEffect(() => {
+    const targetValue = pendingRewardsValue;
+    const startValue = animatedPendingRewardsRef.current;
+
+    if (Math.abs(targetValue - startValue) < Number.EPSILON) {
+      animatedPendingRewardsRef.current = targetValue;
+      setAnimatedPendingRewards(targetValue);
+      setIsPendingRewardsAnimating(false);
+      return;
+    }
+
+    if (rewardsAnimationFrameRef.current) {
+      cancelAnimationFrame(rewardsAnimationFrameRef.current);
+    }
+
+    setIsPendingRewardsAnimating(true);
+
+    const duration = 1800;
+    let startTime: number | null = null;
+
+    const easeOutExpo = (t: number) => (t === 1 ? 1 : 1 - 2 ** (-10 * t));
+
+    const animate = (timestamp: number) => {
+      if (startTime === null) startTime = timestamp;
+
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const easedProgress = easeOutExpo(progress);
+      const nextValue = startValue + (targetValue - startValue) * easedProgress;
+
+      animatedPendingRewardsRef.current = nextValue;
+      setAnimatedPendingRewards(nextValue);
+
+      if (progress < 1) {
+        rewardsAnimationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      animatedPendingRewardsRef.current = targetValue;
+      setAnimatedPendingRewards(targetValue);
+      setIsPendingRewardsAnimating(false);
+      rewardsAnimationFrameRef.current = null;
+    };
+
+    rewardsAnimationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rewardsAnimationFrameRef.current) {
+        cancelAnimationFrame(rewardsAnimationFrameRef.current);
+      }
+    };
+  }, [pendingRewardsValue]);
+
+  const formattedPendingRewards = useMemo(
+    () => animatedPendingRewards.toLocaleString(undefined, { maximumFractionDigits: 6 }),
+    [animatedPendingRewards]
+  );
 
   // Check if approval is needed
   const needsApproval = useMemo(() => {
-    if (!stakeAmount || !allowance) return false;
+    if (!stakeAmount || allowance === undefined || allowance === null) return false;
     try {
       const amount = parseUnits(stakeAmount, decimals);
       return (allowance as bigint) < amount;
@@ -180,13 +247,13 @@ export default function StakingPage() {
 
   // Has claimable rewards
   const hasClaimableRewards = useMemo(() => {
-    if (!pendingRewards) return false;
+    if (pendingRewards === undefined || pendingRewards === null) return false;
     return (pendingRewards as bigint) > 0n;
   }, [pendingRewards]);
 
   // Insufficient balance checks
   const hasInsufficientStakeBalance = useMemo(() => {
-    if (!stakeAmount || !walletBalance) return false;
+    if (!stakeAmount || walletBalance === undefined || walletBalance === null) return false;
     try {
       const amount = parseUnits(stakeAmount, decimals);
       return amount > (walletBalance as bigint);
@@ -194,7 +261,7 @@ export default function StakingPage() {
   }, [stakeAmount, walletBalance, decimals]);
 
   const hasInsufficientUnstakeBalance = useMemo(() => {
-    if (!unstakeAmount || !stakedBalance) return false;
+    if (!unstakeAmount || stakedBalance === undefined || stakedBalance === null) return false;
     try {
       const amount = parseUnits(unstakeAmount, decimals);
       return amount > (stakedBalance as bigint);
@@ -315,8 +382,15 @@ export default function StakingPage() {
     if (!address || !stakeAmount) return;
 
     try {
-      setIsStaking(true);
       const amount = parseUnits(stakeAmount, decimals);
+      const currentAllowance = (allowance as bigint | undefined) ?? 0n;
+
+      if (currentAllowance < amount) {
+        toast.error("Approval required. Please approve tokens before staking.");
+        return;
+      }
+
+      setIsStaking(true);
 
       const hash = await writeContractAsync({
         address: stakingContractAddress,
@@ -449,7 +523,14 @@ export default function StakingPage() {
                 </div>
                 <div className="p-4 border border-gray-200 bg-white">
                   <p className="text-xs uppercase font-bold text-gray-500">Pending Rewards</p>
-                  <p className="text-2xl font-black text-gray-900">{formattedPendingRewards}</p>
+                  <p
+                    className={`text-2xl font-black transition-all duration-700 ${isPendingRewardsAnimating
+                      ? "text-emerald-700 scale-[1.03] animate-pulse"
+                      : "text-gray-900 scale-100"
+                      }`}
+                  >
+                    {formattedPendingRewards}
+                  </p>
                   <p className="text-sm text-gray-500">{rewardsTokenSymbol || "Tokens"}</p>
                 </div>
               </CardContent>
