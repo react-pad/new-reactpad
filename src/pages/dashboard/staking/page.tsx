@@ -21,6 +21,7 @@ import {
 import {
   useAccount,
   useChainId,
+  usePublicClient,
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -30,6 +31,7 @@ export default function StakingPage() {
   const { openConnectModal } = useConnectModal();
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
+  const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
   const stakingContractAddress = getStakingContractAddress(chainId);
 
@@ -38,7 +40,6 @@ export default function StakingPage() {
   const [unstakeAmount, setUnstakeAmount] = useState("");
 
   const [isApproving, setIsApproving] = useState(false);
-  const [approvalHash, setApprovalHash] = useState<`0x${string}`>();
   const [isStaking, setIsStaking] = useState(false);
   const [stakingHash, setStakingHash] = useState<`0x${string}`>();
   const [isUnstaking, setIsUnstaking] = useState(false);
@@ -46,7 +47,6 @@ export default function StakingPage() {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimHash, setClaimHash] = useState<`0x${string}`>();
 
-  const processedApprovalHash = useRef<string | null>(null);
   const processedStakingHash = useRef<string | null>(null);
   const processedUnstakingHash = useRef<string | null>(null);
   const processedClaimHash = useRef<string | null>(null);
@@ -141,9 +141,6 @@ export default function StakingPage() {
   });
 
   // Transaction receipts
-  const { isSuccess: isApprovalSuccess, isError: isApprovalError } =
-    useWaitForTransactionReceipt({ hash: approvalHash });
-
   const { isSuccess: isStakingSuccess, isError: isStakingError } =
     useWaitForTransactionReceipt({ hash: stakingHash });
 
@@ -268,26 +265,6 @@ export default function StakingPage() {
     } catch { return false; }
   }, [unstakeAmount, stakedBalance, decimals]);
 
-  // Handle approval success/error
-  useEffect(() => {
-    if (isApprovalSuccess && approvalHash && processedApprovalHash.current !== approvalHash) {
-      processedApprovalHash.current = approvalHash;
-      setIsApproving(false);
-      setApprovalHash(undefined);
-      refetchAllowance();
-      toast.success("Approval successful!");
-    }
-  }, [isApprovalSuccess, approvalHash, refetchAllowance]);
-
-  useEffect(() => {
-    if (isApprovalError && approvalHash && processedApprovalHash.current !== approvalHash) {
-      processedApprovalHash.current = approvalHash;
-      setIsApproving(false);
-      setApprovalHash(undefined);
-      toast.error("Approval failed.");
-    }
-  }, [isApprovalError, approvalHash]);
-
   // Handle staking success/error
   useEffect(() => {
     if (isStakingSuccess && stakingHash && processedStakingHash.current !== stakingHash) {
@@ -355,39 +332,46 @@ export default function StakingPage() {
     }
   }, [isClaimError, claimHash]);
 
-  const handleApprove = async () => {
+  const handleStake = async () => {
     if (!address || !stakingTokenAddress || !stakeAmount) return;
 
     try {
-      setIsApproving(true);
       const amount = parseUnits(stakeAmount, decimals);
 
-      const hash = await writeContractAsync({
-        address: stakingTokenAddress as Address,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [stakingContractAddress, amount],
-      });
+      if (amount <= 0n) {
+        toast.error("Enter an amount greater than 0.");
+        return;
+      }
 
-      setApprovalHash(hash);
-      toast.info("Approving tokens...");
-    } catch (err: unknown) {
-      setIsApproving(false);
-      const message = (err as { shortMessage?: string })?.shortMessage || "Approval failed";
-      toast.error(message);
-    }
-  };
+      if (!publicClient) {
+        toast.error("Could not access network client. Please retry.");
+        return;
+      }
 
-  const handleStake = async () => {
-    if (!address || !stakeAmount) return;
-
-    try {
-      const amount = parseUnits(stakeAmount, decimals);
       const currentAllowance = (allowance as bigint | undefined) ?? 0n;
 
       if (currentAllowance < amount) {
-        toast.error("Approval required. Please approve tokens before staking.");
-        return;
+        setIsApproving(true);
+        toast.info(`Approving ${stakingTokenSymbol || "tokens"}...`);
+
+        const approvalTxHash = await writeContractAsync({
+          address: stakingTokenAddress as Address,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [stakingContractAddress, amount],
+        });
+
+        const approvalReceipt = await publicClient.waitForTransactionReceipt({
+          hash: approvalTxHash,
+        });
+
+        if (approvalReceipt.status !== "success") {
+          throw new Error("Approval transaction failed.");
+        }
+
+        await refetchAllowance();
+        setIsApproving(false);
+        toast.success("Approval confirmed. Confirm staking to continue.");
       }
 
       setIsStaking(true);
@@ -402,6 +386,7 @@ export default function StakingPage() {
       setStakingHash(hash);
       toast.info("Staking tokens...");
     } catch (err: unknown) {
+      setIsApproving(false);
       setIsStaking(false);
       const message = (err as { shortMessage?: string })?.shortMessage || "Staking failed";
       toast.error(message);
@@ -619,36 +604,32 @@ export default function StakingPage() {
                       )}
                     </div>
 
-                    {needsApproval ? (
-                      <Button
-                        onClick={handleApprove}
-                        disabled={isApproving || !stakeAmount}
-                        className="w-full py-6 bg-[#FFFB8F] text-black font-black uppercase tracking-wider border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:bg-[#FFF570] hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50"
-                      >
-                        {isApproving ? (
-                          <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Approving...
-                          </>
-                        ) : (
-                          `Approve ${stakingTokenSymbol || "Token"}`
-                        )}
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={handleStake}
-                        disabled={isStaking || !stakeAmount || hasInsufficientStakeBalance}
-                        className="w-full py-6 bg-[#7DF9FF] text-black font-black uppercase tracking-wider border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:bg-[#5DD5F5] hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50"
-                      >
-                        {isStaking ? (
-                          <>
-                            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                            Staking...
-                          </>
-                        ) : (
-                          "Stake"
-                        )}
-                      </Button>
+                    <Button
+                      onClick={handleStake}
+                      disabled={isApproving || isStaking || !stakeAmount || hasInsufficientStakeBalance}
+                      className={`w-full py-6 text-black font-black uppercase tracking-wider border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:shadow-[6px_6px_0_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all disabled:opacity-50 ${needsApproval ? "bg-[#FFFB8F] hover:bg-[#FFF570]" : "bg-[#7DF9FF] hover:bg-[#5DD5F5]"
+                        }`}
+                    >
+                      {isApproving ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          Approving...
+                        </>
+                      ) : isStaking ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          Staking...
+                        </>
+                      ) : needsApproval ? (
+                        `Approve + Stake ${stakingTokenSymbol || "Token"}`
+                      ) : (
+                        "Stake"
+                      )}
+                    </Button>
+                    {needsApproval && (
+                      <p className="text-xs text-gray-600 font-bold text-center">
+                        This action requires 2 wallet confirmations.
+                      </p>
                     )}
                   </div>
                 ) : (
