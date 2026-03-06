@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { getStakingContractAddress, StakingContract } from "@/config";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 import {
+  BarChart3,
   Coins,
   Gift,
   Loader2,
@@ -127,6 +128,17 @@ export default function StakingPage() {
     query: { enabled: !!address },
   });
 
+  // Read total amount staked in contract
+  const { data: totalStaked, refetch: refetchTotalStaked } = useReadContract({
+    address: stakingContractAddress,
+    abi: StakingContract.abi as Abi,
+    functionName: "totalSupply",
+    query: {
+      refetchInterval: 5000,
+      refetchIntervalInBackground: true,
+    },
+  });
+
   // Read pending rewards
   const { data: pendingRewards, refetch: refetchPendingRewards } = useReadContract({
     address: stakingContractAddress,
@@ -167,6 +179,13 @@ export default function StakingPage() {
       return Number(formatUnits(stakedBalance as bigint, decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 });
     } catch { return "0"; }
   }, [stakedBalance, decimals]);
+
+  const formattedTotalStaked = useMemo(() => {
+    if (totalStaked === undefined || totalStaked === null) return "0";
+    try {
+      return Number(formatUnits(totalStaked as bigint, decimals)).toLocaleString(undefined, { maximumFractionDigits: 6 });
+    } catch { return "0"; }
+  }, [totalStaked, decimals]);
 
   const pendingRewardsValue = useMemo(() => {
     if (pendingRewards === undefined || pendingRewards === null) return 0;
@@ -274,10 +293,11 @@ export default function StakingPage() {
       setStakeAmount("");
       refetchWalletBalance();
       refetchStakedBalance();
+      refetchTotalStaked();
       refetchPendingRewards();
       toast.success("Staking successful!");
     }
-  }, [isStakingSuccess, stakingHash, refetchWalletBalance, refetchStakedBalance, refetchPendingRewards]);
+  }, [isStakingSuccess, stakingHash, refetchWalletBalance, refetchStakedBalance, refetchTotalStaked, refetchPendingRewards]);
 
   useEffect(() => {
     if (isStakingError && stakingHash && processedStakingHash.current !== stakingHash) {
@@ -297,10 +317,11 @@ export default function StakingPage() {
       setUnstakeAmount("");
       refetchWalletBalance();
       refetchStakedBalance();
+      refetchTotalStaked();
       refetchPendingRewards();
       toast.success("Withdrawal successful!");
     }
-  }, [isUnstakingSuccess, unstakingHash, refetchWalletBalance, refetchStakedBalance, refetchPendingRewards]);
+  }, [isUnstakingSuccess, unstakingHash, refetchWalletBalance, refetchStakedBalance, refetchTotalStaked, refetchPendingRewards]);
 
   useEffect(() => {
     if (isUnstakingError && unstakingHash && processedUnstakingHash.current !== unstakingHash) {
@@ -548,7 +569,20 @@ export default function StakingPage() {
           </div>
 
           {/* Stake/Unstake Form */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-4">
+            <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
+              <CardContent className="p-4 sm:p-6 bg-white">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase font-bold text-gray-500">Total RPAD Staked</p>
+                    <p className="text-3xl sm:text-4xl font-black text-gray-900">{formattedTotalStaked}</p>
+                    <p className="text-sm text-gray-500">{stakingTokenSymbol || "Tokens"}</p>
+                  </div>
+                  <BarChart3 className="w-7 h-7 text-gray-400 shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] p-0 gap-0">
               <CardHeader className="border-b-2 border-black bg-white p-0">
                 <div className="flex">
