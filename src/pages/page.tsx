@@ -1,10 +1,10 @@
 import { TelegramIcon } from "@/components/ui/icons/telegram-icon";
-import { XIcon } from "@/components/ui/icons/x-icon";
+import { XIcon as XSocialIcon } from "@/components/ui/icons/x-icon";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { formatEther } from "viem";
 
 const cardStyles = [
@@ -14,8 +14,15 @@ const cardStyles = [
 ];
 
 export default function Home() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { allPresales, isLoading: isLoadingPresales } =
     useLaunchpadPresales("all");
+
+  const navLinks = [
+    { label: "Projects", href: "/projects" },
+    { label: "NFTs", href: "/nfts" },
+    { label: "Create", href: "/dashboard/create" },
+  ];
 
   // Featured: show live and upcoming presales (prioritize live, then upcoming)
   const featuredPresales = useMemo(() => {
@@ -48,6 +55,79 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#FFF9F0] text-black">
       <div className="container mx-auto px-4 sm:px-6 py-7 max-w-7xl">
+        <header className="mb-16">
+          <div className="border-4 border-black bg-white px-4 py-4 sm:px-6 sm:py-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex items-center justify-between gap-4">
+              <Link
+                to="/"
+                className="text-2xl sm:text-3xl font-black tracking-wider uppercase"
+              >
+                ReactPad
+              </Link>
+
+              <nav className="hidden md:flex items-center gap-6 text-sm lg:text-base font-black uppercase tracking-wider">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className="hover:text-[#3300FF] transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <a
+                  href="https://reactpad.gitbook.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 border-2 border-black hover:bg-[#7DF9FF] hover:text-black transition-colors"
+                >
+                  Docs <BookOpen size={16} />
+                </a>
+              </nav>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen((open) => !open)}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-nav-menu"
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                className="md:hidden inline-flex items-center justify-center border-2 border-black bg-[#7DF9FF] p-2"
+              >
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
+
+            <div
+              id="mobile-nav-menu"
+              className={`md:hidden overflow-hidden transition-all duration-200 ${
+                isMobileMenuOpen ? "max-h-80 mt-4 border-t-2 border-black pt-4" : "max-h-0"
+              }`}
+            >
+              <nav className="flex flex-col gap-3 text-sm font-black uppercase tracking-wider">
+                {navLinks.map((link) => (
+                  <Link
+                    key={`${link.href}-mobile`}
+                    to={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="border-2 border-black bg-[#FFF9F0] px-4 py-3"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+                <a
+                  href="https://reactpad.gitbook.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="inline-flex items-center justify-center gap-2 border-2 border-black bg-black text-white px-4 py-3"
+                >
+                  Docs <BookOpen size={16} />
+                </a>
+              </nav>
+            </div>
+          </div>
+        </header>
+
         {/* Hero Section */}
         <section className="mb-32 text-center">
           <div className="flex items-center justify-center gap-4 mb-8">
@@ -212,7 +292,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="hover:text-[#7DF9FF] transition-colors"
             >
-              <XIcon size={24} />
+              <XSocialIcon size={24} />
             </a>
             <a
               href="https://t.me/reactpad"
