@@ -20,7 +20,7 @@ export default function Home() {
 
   const navLinks = [
     { label: "Projects", href: "/projects" },
-    { label: "NFTs", href: "/nfts" },
+    { label: "Staking", href: "/dashboard/staking" },
     { label: "Create", href: "/dashboard/create" },
   ];
 
@@ -60,9 +60,16 @@ export default function Home() {
             <div className="flex items-center justify-between gap-4">
               <Link
                 to="/"
-                className="text-2xl sm:text-3xl font-black tracking-wider uppercase"
+                className="inline-flex items-center gap-3 text-2xl sm:text-3xl font-black tracking-wider uppercase"
               >
-                ReactPad
+                <img
+                  src="https://res.cloudinary.com/dma1c8i6n/image/upload/v1764289640/reactpad_swlsov.png"
+                  alt="ReactPad Logo"
+                  width={44}
+                  height={44}
+                  className="h-10 w-10 object-contain"
+                />
+                <span>ReactPad</span>
               </Link>
 
               <nav className="hidden md:flex items-center gap-6 text-sm lg:text-base font-black uppercase tracking-wider">
@@ -130,18 +137,6 @@ export default function Home() {
 
         {/* Hero Section */}
         <section className="mb-32 text-center">
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <img
-              src="https://res.cloudinary.com/dma1c8i6n/image/upload/v1764289640/reactpad_swlsov.png"
-              alt="ReactPad Logo"
-              width={60}
-              height={60}
-              className="object-contain"
-            />
-            <div className="text-4xl font-black tracking-wider uppercase">
-              ReactPad
-            </div>
-          </div>
           <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase leading-none mb-8 tracking-tight animate-fade-in-up">
             LAUNCH IDEAS.
             <br />
