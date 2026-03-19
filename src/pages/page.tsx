@@ -224,7 +224,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoadingPresales ? (
               <div className="text-center md:col-span-2 lg:col-span-3 py-10">
-                Loading projects...
+                Loading Projects...
               </div>
             ) : featuredPresales.length === 0 ? (
               <div className="text-center md:col-span-2 lg:col-span-3 py-10">
