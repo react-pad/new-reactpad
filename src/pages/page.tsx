@@ -1,11 +1,14 @@
 import { TelegramIcon } from "@/components/ui/icons/telegram-icon";
 import { XIcon as XSocialIcon } from "@/components/ui/icons/x-icon";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useCountUp } from "@/lib/hooks/useCountUp";
 import { useLaunchpadPresales } from "@/lib/hooks/useLaunchpadPresales";
+import { useReactPriceUsd } from "@/lib/hooks/useReactPriceUsd";
 import { BookOpen, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { formatEther } from "viem";
+import { useAccount } from "wagmi";
 
 const cardStyles = [
   { bg: "bg-[#7DF9FF]", text: "text-black" },
@@ -15,6 +18,8 @@ const cardStyles = [
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { openConnectModal } = useConnectModal();
+  const { address } = useAccount();
   const { allPresales, isLoading: isLoadingPresales } =
     useLaunchpadPresales("all");
 
@@ -51,6 +56,12 @@ export default function Home() {
     useCountUp(totalRaisedValue);
   const { count: activePresales, ref: activePresalesRef } =
     useCountUp(livePresaleCount);
+  const reactPriceUsd = useReactPriceUsd();
+
+  const totalRaisedUsd = useMemo(() => {
+    if (reactPriceUsd === null) return null;
+    return totalRaised * reactPriceUsd;
+  }, [reactPriceUsd, totalRaised]);
 
   return (
     <main className="min-h-screen bg-[#FFF9F0] text-black">
@@ -82,14 +93,15 @@ export default function Home() {
                     {link.label}
                   </Link>
                 ))}
-                <a
-                  href="https://reactpad.gitbook.io/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 border-2 border-black hover:bg-[#7DF9FF] hover:text-black transition-colors"
-                >
-                  Docs <BookOpen size={16} />
-                </a>
+                {!address && (
+                  <button
+                    type="button"
+                    onClick={() => openConnectModal?.()}
+                    className="inline-flex items-center bg-black text-white px-4 py-2 border-2 border-black hover:bg-[#7DF9FF] hover:text-black transition-colors"
+                  >
+                    CONNECT WALLET
+                  </button>
+                )}
               </nav>
 
               <button
@@ -121,15 +133,18 @@ export default function Home() {
                     {link.label}
                   </Link>
                 ))}
-                <a
-                  href="https://reactpad.gitbook.io/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="inline-flex items-center justify-center gap-2 border-2 border-black bg-black text-white px-4 py-3"
-                >
-                  Docs <BookOpen size={16} />
-                </a>
+                {!address && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      openConnectModal?.();
+                    }}
+                    className="inline-flex items-center justify-center border-2 border-black bg-black text-white px-4 py-3"
+                  >
+                    CONNECT WALLET
+                  </button>
+                )}
               </nav>
             </div>
           </div>
@@ -169,8 +184,15 @@ export default function Home() {
               Total Raised
             </p>
             <p ref={totalRaisedRef} className="text-6xl font-black">
-              {totalRaised < 0.01 ? "0" : totalRaised.toFixed(2)}{" "}
-              <span className="text-2xl">REACT</span>
+              {totalRaisedUsd === null
+                ? "..."
+                : `$${totalRaisedUsd.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`}
+            </p>
+            <p className="text-xl font-black mt-2">
+              {totalRaised < 0.01 ? "0" : totalRaised.toFixed(2)} REACT
             </p>
           </div>
           <div className="bg-[#FF00F5] border-4 border-black p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 animate-fade-in-up animation-delay-600">

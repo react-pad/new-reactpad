@@ -1,5 +1,6 @@
 import { useIsAdmin } from "@/lib/utils/admin";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { useReactPriceUsd } from "@/lib/hooks/useReactPriceUsd";
 import {
   LayoutDashboard,
   Layers,
@@ -10,7 +11,7 @@ import {
   Shield,
   WalletMinimal
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { Address } from "viem";
 import {
@@ -36,7 +37,7 @@ const SidebarContent = () => {
   const chainId = useChainId();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
-  const [ethPriceUsd, setEthPriceUsd] = useState(0);
+  const reactPriceUsd = useReactPriceUsd();
   const { isAdmin } = useIsAdmin(address as Address | undefined);
 
   const isConnected = !!address;
@@ -55,31 +56,7 @@ const SidebarContent = () => {
   const { data: balanceData } = useBalance({ address });
   const balance = balanceData ? parseFloat(balanceData.formatted) : 0;
 
-  useEffect(() => {
-    const fetchEthPrice = async () => {
-      try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=reactive-network&vs_currencies=usd');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        const price = data?.["reactive-network"]?.usd;
-        console.log("REACT price:", price);
-        if (price !== undefined && price !== null) {
-          setEthPriceUsd(price);
-        }
-      } catch (error) {
-        console.error("Failed to fetch REACT price:", error);
-      }
-    };
-
-    fetchEthPrice();
-    const intervalId = setInterval(fetchEthPrice, 60000); // Refresh every 60 seconds
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const valueUsd = balance * ethPriceUsd;
+  const valueUsd = balance * (reactPriceUsd ?? 0);
 
   return (
     <div className="flex flex-col flex-1 h-full">
@@ -112,7 +89,7 @@ const SidebarContent = () => {
             <div className="text-sm font-black uppercase mt-1">
               {'REACT'}
             </div>
-            {ethPriceUsd > 0 && (
+            {(reactPriceUsd ?? 0) > 0 && (
               <div className="text-xs font-bold mt-1">
                 ~${valueUsd < 0.01 && valueUsd > 0
                   ? valueUsd.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
